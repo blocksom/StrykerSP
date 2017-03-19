@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.shape.*?>
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane id="AnchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800" prefWidth="1280" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="hip.positioning.system.FXMLDocumentController">
+   <children>
+      <Button layoutX="54.0" layoutY="66.0" mnemonicParsing="false" onAction="#calibrate" text="Calibrate" />
+      <StackPane layoutX="294.0" layoutY="163.0" prefHeight="474.0" prefWidth="710.0">
+         <children>
+            <Pane fx:id="flexExtenView" prefHeight="200.0" prefWidth="200.0">
+               <children>
+                  <Line endX="100.0" startX="-100.0" stroke="#e41818" />
+                  <Line endX="100.0" startX="-100.0" stroke="#e41818" />
+               </children>
+            </Pane>
+            <Pane fx:id="intExtView" prefHeight="200.0" prefWidth="200.0">
+               <children>
+                  <Line fx:id="intExtFixedLine" endX="100.0" startX="-100.0" stroke="#26d034" />
+                  <Line fx:id="intExtDyLine" endX="100.0" startX="-100.0" stroke="#26d034" />
+               </children>
+            </Pane>
+            <Pane fx:id="abAdView" prefHeight="200.0" prefWidth="200.0">
+               <children>
+                  <Line fx:id="addAbFixedLine" endX="100.0" startX="-100.0" stroke="#3b08d3" />
+                  <Line fx:id="addAbDyLine" endX="100.0" startX="-100.0" stroke="#3b08d3" />
+               </children>
+            </Pane>
+         </children>
+      </StackPane>
+      <Label fx:id="hipFlexExtenLabel" layoutX="1020.0" layoutY="163.0" text="Hip Flex/Extension Angle: " />
+      <Label fx:id="kneeFlexExtenLabel" layoutX="1020.0" layoutY="202.0" text="Knee Flexion/Extension Angle: " />
+      <Label fx:id="hipAbAdLabel" layoutX="1020.0" layoutY="239.0" text="Hip Adduction/Abduction Angle: " />
+      <Label fx:id="intExtLabel" layoutX="1020.0" layoutY="274.0" text="Hip Internal/External Angle: " />
+      <RadioButton fx:id="flexExtButton" layoutX="753.0" layoutY="675.0" mnemonicParsing="false" onAction="#changeToFlexExten" text="Flexion/Extension View">
+         <toggleGroup>
+            <ToggleGroup fx:id="viewGroups" />
+         </toggleGroup>
+      </RadioButton>
+      <RadioButton fx:id="intExtButton" layoutX="561.0" layoutY="675.0" mnemonicParsing="false" onAction="#changeToIntExt" text="Internal/Rotation View" toggleGroup="$viewGroups" />
+      <RadioButton fx:id="AdAbButton" layoutX="323.0" layoutY="675.0" mnemonicParsing="false" onAction="#changeToAddAb" text="Adduction/Abduction View" toggleGroup="$viewGroups" />
+      <Button layoutX="818.0" layoutY="59.0" mnemonicParsing="false" onAction="#increaseAngle" text="Increment" />
+      <Button layoutX="932.0" layoutY="59.0" mnemonicParsing="false" onAction="#decreaseAngle" text="Decrement" />
+   </children>
+</AnchorPane>
