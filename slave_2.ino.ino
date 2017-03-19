@@ -59,6 +59,18 @@ void setup()
     BTserial.begin(9600);  
 }
 
+void loop() {
+  recordAccelRegisters();
+  //recordGyroRegisters();
+  //recordMagRegisters();
+  //  recordMagSensitivity();
+//  printData();
+  //setup_button();
+  accel_calibration();
+  //calibrated_accel();
+  delay(100);
+}
+
 void setupMPU(){
   Wire.beginTransmission(0b1101000); //This is the I2C address of the MPU (b1101000/b1101001 for AC0 low/high datasheet sec. 9.2)
   Wire.write(0x6B); //Accessing the register 6B - Power Management (Sec. 4.28)
@@ -103,21 +115,11 @@ void processAccelData(){
     
 }
 
-void loop() 
+void accel_calibration() 
 {
    // Vector v;
     //GForce g;
   
-    recordAccelRegisters();
-    //recordGyroRegisters();
-    // recordMagRegisters();
-    // recordMagSensitivity();
-    //  printData();
-    //setup_button();
-    //accel_calibration();
-    //calibrated_accel();
-    delay(100);
-    
     //BTserial.println("Bluetooth Initialize..."); 
     //BTserial.println("Bluetooth Test..."); 
     //delay(1000);   
@@ -127,7 +129,7 @@ void loop()
     // compare the buttonState to its previous state
     if (buttonState != lastButtonState) {
       // if the state has changed, increment the counter
-      Serial.println("got here");
+      
       if (buttonState == HIGH) {
         // if the current state is HIGH then the button
         // wend from off to on:
@@ -152,14 +154,14 @@ void loop()
          }   
       }
       // Delay a little bit to avoid bouncing
-      //delay(50);
+      delay(50);
     }
     // save the current state as the last state,
     //for next time through the loop
     lastButtonState = buttonState;
     
     calibrationStep=buttonPushCounter;
-    //delay(50);
+    delay(50);
   
     
     if (calibrationStep==1){
@@ -173,7 +175,7 @@ void loop()
     }       
     else if (calibrationStep==4){
         //float gForce_fake[3] = {1,2,3};
-        v.Print(g.gForce, L,M, "Accelerometer Raw: ");
+        //v.Print(g.gForce, L,M, "Accelerometer Raw: ");
         float Norm[3];
         v.Vector_Norm(g.gForce,Norm);           //Normalizing the output of accelerometer
         //v.Print(Norm,L,M,"Normalized accelerometer: ");
@@ -215,42 +217,53 @@ void loop()
         ///v.Print((float*)Norm_transpose, L,N, "Transpose of nomalized vect: ");
         float final_gForce[3][1];
         v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose,M,N,L,(float*)final_gForce);
-        v.Print((float*)final_gForce,M,L,"Final gForce: ");                
+        //v.Print((float*)final_gForce,M,L,"Final gForce: ");   
+                   
 }
 
- else if (calibrationStep==5) {
-  
+ else if (calibrationStep>4) {
+        
         val=analogRead(potPin);
+        
         kneeAngle=(140.0/(highEnd-lowEnd))*(val-offset);
+        
         //BTserial.println(kneeAngle);
-         float gForce_transpose2[3][1];
-          v.Transpose((float*)g.gForce, L,N, (float*)gForce_transpose2);
-          v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose2,M,N,L,(float*)g.final_gForce);
+        float gForce_transpose2[3][1];
+          float gF_Norm[3];
+          v.Vector_Norm(g.gForce,gF_Norm);
+          
+          v.Transpose((float*)gF_Norm, L,N, (float*)gForce_transpose2);
+          float final_gForce [3][0];
+         
+          //Multiplication function
+          v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose2,M,N,L,(float*)final_gForce);
+                   
           //v.Print((float*)g.final_gForce,M,L,"Final gForce: ");
-          float numerator_theta = gForce_transpose2[0][0];
-          float denom_theta_part1 = pow(gForce_transpose2[1][0],2)+pow(gForce_transpose2[2][0],2);
+          float numerator_theta = final_gForce[0][0];
+          
+          float denom_theta_part1 = pow(final_gForce[0][1],2)+pow(final_gForce[0][2],2);
           float denom_theta_final = sqrt(denom_theta_part1);
           float theta_rad = atan2(numerator_theta,denom_theta_final);
           float theta = round(theta_rad*180/3.1459265); // rad to deg
-          Serial.print("Theta: ");
-          Serial.print(theta);
-          Serial.println();
-          float numerator_psi = gForce_transpose2[1][0];
-          float denom_psi_part1 = pow(gForce_transpose2[0][0],2)+pow(gForce_transpose2[2][0],2);
-          float denom_psi_final = sqrt(denom_theta_part1);
+//          Serial.print("Theta accel: "); // 
+//          Serial.print(theta);
+//          Serial.println();
+          float numerator_psi = final_gForce[0][1];
+          float denom_psi_part1 = pow(final_gForce[0][0],2)+pow(final_gForce[0][2],2);
+          float denom_psi_final = sqrt(denom_psi_part1);
           float psi_rad = atan2(numerator_psi,denom_psi_final);
           float psi = round(psi_rad*180/3.1459265); // rad to deg
-          Serial.print("Psi: ");
-          Serial.print(psi);
-          Serial.println();
-          float numerator_phi = gForce_transpose2[2][0];
-          float denom_phi_part1 = pow(gForce_transpose2[1][0],2)+pow(gForce_transpose2[0][0],2);
-          float denom_phi_final = sqrt(denom_theta_part1);
-          float phi_rad = atan2(numerator_phi,denom_phi_final);
+//          Serial.print("Psi accel: ");
+//          Serial.print(psi);
+//          Serial.println();
+          float denom_phi = final_gForce[0][2];
+          float numerator_phi_part1 = pow(final_gForce[0][1],2)+pow(final_gForce[0][0],2);
+          float numerator_phi_final = sqrt(numerator_phi_part1);
+          float phi_rad = atan2(numerator_phi_final,denom_phi);
           float phi = round(phi_rad*180/3.1459265); // rad to deg
-          Serial.print("Phi: ");
-          Serial.print(phi);
-          Serial.println();
+//          Serial.print("Phi accel: ");
+//          Serial.print(phi);
+//          Serial.println();
 
 //          float finalAngles[4] = {};
 //          finalAngles[0] = kneeAngle;
@@ -264,8 +277,8 @@ void loop()
           BTserial.println(phi);
         delay(10);
  }
- Serial.println("calibration step: ");
- Serial.println(calibrationStep);
+// Serial.println("calibration step: ");
+// Serial.println(calibrationStep);
 }
 
 
