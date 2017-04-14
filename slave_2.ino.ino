@@ -1,10 +1,10 @@
-#include <SoftwareSerial.h>
+#include <SoftwareBTserial.h>
 #include <Wire.h>
 #include "MPU9250.h"
 #include "Vector.h"
 #include <math.h>
 
-SoftwareSerial BTserial(9, 10); // RX | TX
+SoftwareBTserial BTBTserial(9, 10); // RX | TX
 // Connect the HC-05 TX to Arduino pin 9 RX. 
 // Connect the HC-05 RX to Arduino pin 10 TX through a voltage divider.
 
@@ -15,7 +15,12 @@ class GForce {
   float Calibration_Matrix[3][3] = {};
   float cal_gForceX, cal_gForceY, cal_gForceZ;
   float final_gForce[3][0] = {};
-    
+  float magRaw[3] = {};
+  float magRaw_Norm[3] = {};
+  float mx_xy_0, my_xy_0; // mx_xy_180, my_xy_180;
+  float my_yz_0, mz_yz_0; // my_yz_180, mz_yz_180;
+  float mx_xz_0, mz_xz_0; // mx_xz_180, mz_xz_180;
+  float mag_offset_z, mag_offset_x, mag_offset_y;    
 };
 long accelX, accelY, accelZ;
 //float gForceX, gForceY, gForceZ;
@@ -51,23 +56,18 @@ int L = 1;
  
 void setup() 
 {
-    Serial.begin(9600);
+    BTserial.begin(9600);
     Wire.begin();
     setupMPU();
     
-    // HC-06 default serial speed for communcation mode is 9600
-    BTserial.begin(9600);  
+    // HC-06 default BTserial speed for communcation mode is 9600
+    BTBTserial.begin(9600);  
 }
 
 void loop() {
   recordAccelRegisters();
-  //recordGyroRegisters();
-  //recordMagRegisters();
-  //  recordMagSensitivity();
-//  printData();
-  //setup_button();
+  recordMagRegisters();
   accel_calibration();
-  //calibrated_accel();
   delay(100);
 }
 
@@ -115,13 +115,51 @@ void processAccelData(){
     
 }
 
+void recordMagRegisters(){
+ 
+ 
+  if (myIMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01){
+  myIMU.readMagData(myIMU.magCount);  // Read the x/y/z adc values
+    myIMU.getMres();
+ // User environmental x-axis correction in milliGauss, should be
+    // automatically calculated
+    myIMU.magbias[0] = +470.;
+    // User environmental x-axis correction in milliGauss TODO axis??
+    myIMU.magbias[1] = +120.;
+    // User environmental x-axis correction in milliGauss
+    myIMU.magbias[2] = +125.;
+
+    // Calculate the magnetometer values in milliGauss
+    // Include factory calibration per data sheet and user environmental
+    // corrections
+    // Get actual magnetometer value, this depends on scale being set
+   myIMU.mx = (float)myIMU.magCount[0]*myIMU.mRes*myIMU.magCalibration[0] -
+               myIMU.magbias[0];
+   myIMU.my = (float)myIMU.magCount[1]*myIMU.mRes*myIMU.magCalibration[1] -
+               myIMU.magbias[1];
+   myIMU.mz = (float)myIMU.magCount[2]*myIMU.mRes*myIMU.magCalibration[2] -
+               myIMU.magbias[2];
+  g.magRaw[0] = (float)myIMU.mx;
+  g.magRaw[1] = (float)myIMU.my;
+  g.magRaw[2] = (float)myIMU.mz;
+  Vector v;
+  
+  v.Vector_Norm(g.magRaw,g.magRaw_Norm);
+  //v.Print((float*)g.magRaw,M,L," magRaw 1: ");
+//    BTserial.print("mx = "); BTserial.print((int)myIMU.mx);
+//    BTserial.print("my = "); BTserial.print((int)myIMU.my);
+//    BTserial.print("mz = "); BTserial.print((int)myIMU.mz);
+
+  } // if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
+} // void recordMagRegisters()
+
 void accel_calibration() 
 {
    // Vector v;
     //GForce g;
   
-    //BTserial.println("Bluetooth Initialize..."); 
-    //BTserial.println("Bluetooth Test..."); 
+    //BTBTserial.println("Bluetooth Initialize..."); 
+    //BTBTserial.println("Bluetooth Test..."); 
     //delay(1000);   
     
     // read the pushbutton input pin:
@@ -138,19 +176,37 @@ void accel_calibration()
         // if the current state is LOW then the button
         // wend from on to off:
          if (calibrationStep==1){
-            BTserial.println("Place brace in closed state and press button to continue.");
+            BTBTserial.println("Place brace in closed state and press button to continue.");
          }
          else if(calibrationStep==2){
-           BTserial.println("Place brace in open state and press button to continue");
+           BTBTserial.println("Place brace in open state and press button to continue");
          }
          else if(calibrationStep==3){
-            BTserial.println("Lock brace at 0 degrees and press button to continue.");
-         }    
-        else if (calibrationStep==4){
-        BTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
+            BTBTserial.println("Lock brace at 0 degrees and press button to continue.");
+         } 
+       else if (calibrationStep==4){
+         BTserial.println("Place xy plane face up");   
  }
-         else if(calibrationStep==5){
-            BTserial.println("Calibration completed.");
+        else if (calibrationStep==5){
+         BTserial.println("Rotate xy plane 180 degrees");   
+ }
+        else if (calibrationStep==6){
+         BTserial.println("Place yz plane face up");   
+ }
+        else if (calibrationStep==7){
+         BTserial.println("Rotate yz plane 180 degrees");   
+ }
+        else if (calibrationStep==8){
+         BTserial.println("Place xz plane face up");   
+ }
+        else if (calibrationStep==9){
+         BTserial.println("Rotate xz plane 180 degrees");   
+ }   
+        else if (calibrationStep==10){
+        BTBTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
+ }
+         else if(calibrationStep==11){
+            BTBTserial.println("Calibration completed.");
          }   
       }
       // Delay a little bit to avoid bouncing
@@ -172,8 +228,55 @@ void accel_calibration()
     }
     else if(calibrationStep==3){
          offset=analogRead(potPin);
-    }       
-    else if (calibrationStep==4){
+    }  
+       else if(calibrationStep==4){
+          //Serial.print(" Place with positive xy axis");
+          g.mx_xy_0 = g.magRaw[0];
+          g.my_xy_0 = g.magRaw[1];
+ }
+       else if(calibrationStep==5){
+          //Serial.print("Rotate 180 degrees");
+          float mx_xy_180 = g.magRaw[0];
+          float my_xy_180 = g.magRaw[1];
+
+          // this takes magnitude of first reading and magnitude of second, then adds
+          // and divides by 2
+
+          float R1_xy = sqrt(pow(g.mx_xy_0,2)+pow(g.my_xy_0,2));
+          float R2_xy = sqrt(pow(mx_xy_180,2)+pow(my_xy_180,2));
+          g.mag_offset_z = (R1_xy+R2_xy)/2;
+ }
+
+       else if (calibrationStep==6){
+          //Serial.print(" Place with positive yz axis");
+          g.my_yz_0 = g.magRaw[1];
+          g.mz_yz_0 = g.magRaw[2];
+ }
+       else if (calibrationStep==7){
+        //Serial.print("Rotate 180 degrees");
+        float my_yz_180 = g.magRaw[1];
+        float mz_yz_180 = g.magRaw[2];
+
+        float R1_yz = sqrt(pow(g.my_yz_0,2)+pow(g.mz_yz_0,2));
+        float R2_yz = sqrt(pow(my_yz_180,2)+pow(mz_yz_180,2));
+        g.mag_offset_x = (R1_yz+R2_yz)/2;
+ }
+
+       else if (calibrationStep==8){
+        //Serial.print(" Place with positive xy axis");
+        float mx_xz_0 = g.magRaw[0];
+        float mz_xz_0 = g.magRaw[2];
+ }
+        else if (calibrationStep==9){
+        //Serial.print("Rotate 180 degrees");
+        float mx_xz_180 = g.magRaw[0];
+        float mz_xz_180 = g.magRaw[2];
+
+        float R1_xz = sqrt(pow(g.mx_xz_0,2)+pow(g.mz_xz_0,2));
+        float R2_xz = sqrt(pow(mx_xz_180,2)+pow(mz_xz_180,2));
+        g.mag_offset_x = (R1_xz+R2_xz)/2;          
+ }     
+    else if (calibrationStep==10){
         //float gForce_fake[3] = {1,2,3};
         //v.Print(g.gForce, L,M, "Accelerometer Raw: ");
         float Norm[3];
@@ -190,17 +293,17 @@ void accel_calibration()
         v.Identity(identity);              // Creating 3x3 identity matrix
         //v.Print((float*)identity,M,N,"Identity Matrix: ");
         float dot_prod = v.Vector_Dot_Product((float*)Norm,(float*)correct_vect); // dot product b/w normalized accel output and what output should be
-        //Serial.print("dot product: ");
-        //Serial.print(dot_prod);
+        //BTserial.print("dot product: ");
+        //BTserial.print(dot_prod);
         float C = v.Norm_const(Cross);
-        //Serial.print("constant: ");
-        //Serial.print(C);
+        //BTserial.print("constant: ");
+        //BTserial.print(C);
         float divisor = pow(C,2);
-        //Serial.print("divisor: ");
-        //Serial.print(divisor);
+        //BTserial.print("divisor: ");
+        //BTserial.print(divisor);
         float mult_const = ((1-dot_prod)/divisor);
-        //Serial.print("constant for multiplication: ");
-        //Serial.print(mult_const);
+        //BTserial.print("constant for multiplication: ");
+        //BTserial.print(mult_const);
         float squared_SSC[3][3];
         v.Multiply((float*)SSC,(float*)SSC,M,N,N,(float*)squared_SSC);
         //v.Print((float*)squared_SSC,M,N, "Squared SSC: ");
@@ -221,13 +324,13 @@ void accel_calibration()
                    
 }
 
- else if (calibrationStep>4) {
+ else if (calibrationStep>10) {
         
         val=analogRead(potPin);
         
         kneeAngle=(140.0/(highEnd-lowEnd))*(val-offset);
         
-        //BTserial.println(kneeAngle);
+        //BTBTserial.println(kneeAngle);
         float gForce_transpose2[3][1];
           float gF_Norm[3];
           v.Vector_Norm(g.gForce,gF_Norm);
@@ -245,40 +348,69 @@ void accel_calibration()
           float denom_theta_final = sqrt(denom_theta_part1);
           float theta_rad = atan2(numerator_theta,denom_theta_final);
           float theta = round(theta_rad*180/3.1459265); // rad to deg
-//          Serial.print("Theta accel: "); // 
-//          Serial.print(theta);
-//          Serial.println();
+          BTserial.print("Theta accel: "); // 
+          BTserial.print(theta);
+          BTserial.println();
           float numerator_psi = final_gForce[0][1];
           float denom_psi_part1 = pow(final_gForce[0][0],2)+pow(final_gForce[0][2],2);
           float denom_psi_final = sqrt(denom_psi_part1);
           float psi_rad = atan2(numerator_psi,denom_psi_final);
           float psi = round(psi_rad*180/3.1459265); // rad to deg
-//          Serial.print("Psi accel: ");
-//          Serial.print(psi);
-//          Serial.println();
+          BTserial.print("Psi accel: ");
+          BTserial.print(psi);
+          BTserial.println();
           float denom_phi = final_gForce[0][2];
           float numerator_phi_part1 = pow(final_gForce[0][1],2)+pow(final_gForce[0][0],2);
           float numerator_phi_final = sqrt(numerator_phi_part1);
           float phi_rad = atan2(numerator_phi_final,denom_phi);
           float phi = round(phi_rad*180/3.1459265); // rad to deg
-//          Serial.print("Phi accel: ");
-//          Serial.print(phi);
-//          Serial.println();
+          BTserial.print("Phi accel: ");
+          BTserial.print(phi);
+          BTserial.println();
 
 //          float finalAngles[4] = {};
 //          finalAngles[0] = kneeAngle;
 //          finalAngles[1] = theta;
 //          finalAngles[2] = psi;
 //          finalAngles[3] = phi;
+
+      //Getting Magnetometer angles
+          float magX = g.magRaw_Norm[0]+g.mag_offset_x;
+          float magY = g.magRaw_Norm[1]+g.mag_offset_y;
+          float magZ = g.magRaw_Norm[2]+g.mag_offset_z;
+          float numerator_theta_mag = magX;
+          float denom_theta_part1_mag = pow(magY,2)+pow(magZ,2);
+          float denom_theta_final_mag = sqrt(denom_theta_part1_mag);
+          float theta_rad_mag = atan2(numerator_theta_mag,denom_theta_final_mag);
+          float theta_mag = round(theta_rad_mag*180/3.1459265); // rad to deg
+          Serial.print("Theta mag: "); // 
+          Serial.print(theta_mag);
+          Serial.println();
+          float numerator_psi_mag = magY;
+          float denom_psi_part1_mag = pow(magX,2)+pow(magZ,2);
+          float denom_psi_final_mag = sqrt(denom_psi_part1_mag);
+          float psi_rad_mag = atan2(numerator_psi_mag,denom_psi_final_mag);
+          float psi_mag = round(psi_rad_mag*180/3.1459265); // rad to deg
+          Serial.print("Psi mag: ");
+          Serial.print(psi_mag);
+          Serial.println();
+          float denom_phi_mag = magZ;
+          float numerator_phi_part1_mag = pow(magX,2)+pow(magY,2);
+          float numerator_phi_final_mag = sqrt(numerator_phi_part1_mag);
+          float phi_rad_mag = atan2(numerator_phi_final_mag,denom_phi_mag);
+          float phi_mag = round(phi_rad_mag*180/3.1459265); // rad to deg
+          Serial.print("Phi mag: ");
+          Serial.print(phi_mag);
+          Serial.println();
           
-          BTserial.println(kneeAngle);
-          BTserial.println(theta);
-          BTserial.println(psi);
-          BTserial.println(phi);
+//          BTBTserial.println(kneeAngle);
+//          BTBTserial.println(theta);
+//          BTBTserial.println(psi);
+//          BTBTserial.println(phi);
         delay(10);
  }
-// Serial.println("calibration step: ");
-// Serial.println(calibrationStep);
+// BTserial.println("calibration step: ");
+// BTserial.println(calibrationStep);
 }
 
 
