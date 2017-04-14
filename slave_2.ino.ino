@@ -1,10 +1,10 @@
-#include <SoftwareBTserial.h>
+#include <SoftwareSerial.h>
 #include <Wire.h>
 #include "MPU9250.h"
 #include "Vector.h"
 #include <math.h>
 
-SoftwareBTserial BTBTserial(9, 10); // RX | TX
+SoftwareSerial BTserial(9, 10); // RX | TX
 // Connect the HC-05 TX to Arduino pin 9 RX. 
 // Connect the HC-05 RX to Arduino pin 10 TX through a voltage divider.
 
@@ -61,7 +61,7 @@ void setup()
     setupMPU();
     
     // HC-06 default BTserial speed for communcation mode is 9600
-    BTBTserial.begin(9600);  
+    BTserial.begin(9600);  
 }
 
 void loop() {
@@ -114,7 +114,7 @@ void processAccelData(){
   
     
 }
-
+MPU9250 myIMU;
 void recordMagRegisters(){
  
  
@@ -158,8 +158,8 @@ void accel_calibration()
    // Vector v;
     //GForce g;
   
-    //BTBTserial.println("Bluetooth Initialize..."); 
-    //BTBTserial.println("Bluetooth Test..."); 
+    //BTserial.println("Bluetooth Initialize..."); 
+    //BTserial.println("Bluetooth Test..."); 
     //delay(1000);   
     
     // read the pushbutton input pin:
@@ -176,13 +176,13 @@ void accel_calibration()
         // if the current state is LOW then the button
         // wend from on to off:
          if (calibrationStep==1){
-            BTBTserial.println("Place brace in closed state and press button to continue.");
+            BTserial.println("Place brace in closed state and press button to continue.");
          }
          else if(calibrationStep==2){
-           BTBTserial.println("Place brace in open state and press button to continue");
+           BTserial.println("Place brace in open state and press button to continue");
          }
          else if(calibrationStep==3){
-            BTBTserial.println("Lock brace at 0 degrees and press button to continue.");
+            BTserial.println("Lock brace at 0 degrees and press button to continue.");
          } 
        else if (calibrationStep==4){
          BTserial.println("Place xy plane face up");   
@@ -203,10 +203,10 @@ void accel_calibration()
          BTserial.println("Rotate xz plane 180 degrees");   
  }   
         else if (calibrationStep==10){
-        BTBTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
+        BTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
  }
          else if(calibrationStep==11){
-            BTBTserial.println("Calibration completed.");
+            BTserial.println("Calibration completed.");
          }   
       }
       // Delay a little bit to avoid bouncing
@@ -330,7 +330,7 @@ void accel_calibration()
         
         kneeAngle=(140.0/(highEnd-lowEnd))*(val-offset);
         
-        //BTBTserial.println(kneeAngle);
+        //BTserial.println(kneeAngle);
         float gForce_transpose2[3][1];
           float gF_Norm[3];
           v.Vector_Norm(g.gForce,gF_Norm);
@@ -403,10 +403,10 @@ void accel_calibration()
           Serial.print(phi_mag);
           Serial.println();
           
-//          BTBTserial.println(kneeAngle);
-//          BTBTserial.println(theta);
-//          BTBTserial.println(psi);
-//          BTBTserial.println(phi);
+//          BTserial.println(kneeAngle);
+//          BTserial.println(theta);
+//          BTserial.println(psi);
+//          BTserial.println(phi);
         delay(10);
  }
 // BTserial.println("calibration step: ");
