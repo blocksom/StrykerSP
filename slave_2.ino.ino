@@ -3,6 +3,28 @@
 #include "MPU9250.h"
 #include "Vector.h"
 #include <math.h>
+#include <Adafruit_NeoPixel.h>
+
+#define PIN 6
+
+ 
+// Parameter 1 = number of pixels in strip
+// Parameter 2 = pin number (most are valid)
+// Parameter 3 = pixel type flags, add together as needed:
+//   NEO_KHZ800  800 KHz bitstream (most NeoPixel products w/WS2812 LEDs)
+//   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
+//   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
+//   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(16, PIN, NEO_GRB + NEO_KHZ800);
+ 
+// Define colors for use throughout script. Colors can be any 
+// RGB combination.
+uint32_t green = strip.Color(0, 255, 0);
+uint32_t yellow = strip.Color(255,200,0);
+uint32_t red = strip.Color(255, 0, 0);
+uint32_t blue = strip.Color(0, 255, 255);
+uint32_t off = strip.Color(0, 0, 0);
+uint32_t purple = strip.Color(230, 230, 250);
 
 SoftwareSerial BTserial(9, 10); // RX | TX
 // Connect the HC-05 TX to Arduino pin 9 RX. 
@@ -62,6 +84,12 @@ void setup()
     
     // HC-06 default BTserial speed for communcation mode is 9600
     BTserial.begin(9600);  
+
+    // initialize LED ring
+    strip.begin();
+    strip.show(); // Initialize all pixels to 'off'
+    strip.setBrightness(10);
+    startLight(blue, 50, 0, 16);  // flashes blue ring indicating start up success
 }
 
 void loop() {
@@ -69,6 +97,16 @@ void loop() {
   recordMagRegisters();
   accel_calibration();
   delay(100);
+}
+
+void startLight(uint32_t color,int t,int I, int limit) {
+  //static int I=0;
+  if (I==limit)  // terminating condition
+        return;
+  strip.setPixelColor(I, color);
+  strip.show();
+  delay(t);
+  startLight(color, t, I + 1, limit);
 }
 
 void setupMPU(){
@@ -161,6 +199,10 @@ void accel_calibration()
     //BTserial.println("Bluetooth Initialize..."); 
     //BTserial.println("Bluetooth Test..."); 
     //delay(1000);   
+
+    static int saved[10];
+    static int savedCount = 0, loopCount = 0, flag = 0;
+    int counter = 0;
     
     // read the pushbutton input pin:
     buttonState = digitalRead(buttonPin);
@@ -222,17 +264,21 @@ void accel_calibration()
     
     if (calibrationStep==1){
           lowEnd=analogRead(potPin);
+          startLight(red, 1, 0, 9);
     }
     else if(calibrationStep==2){
          highEnd=analogRead(potPin);
+         startLight(green, 1, 0, 1);
     }
     else if(calibrationStep==3){
          offset=analogRead(potPin);
+         startLight(green, 1, 1, 2);
     }  
        else if(calibrationStep==4){
           //Serial.print(" Place with positive xy axis");
           g.mx_xy_0 = g.magRaw[0];
           g.my_xy_0 = g.magRaw[1];
+          startLight(green, 1, 2, 3);
  }
        else if(calibrationStep==5){
           //Serial.print("Rotate 180 degrees");
@@ -245,12 +291,14 @@ void accel_calibration()
           float R1_xy = sqrt(pow(g.mx_xy_0,2)+pow(g.my_xy_0,2));
           float R2_xy = sqrt(pow(mx_xy_180,2)+pow(my_xy_180,2));
           g.mag_offset_z = (R1_xy+R2_xy)/2;
+          startLight(green, 1, 3, 4);
  }
 
        else if (calibrationStep==6){
           //Serial.print(" Place with positive yz axis");
           g.my_yz_0 = g.magRaw[1];
           g.mz_yz_0 = g.magRaw[2];
+          startLight(green, 1, 4, 5);
  }
        else if (calibrationStep==7){
         //Serial.print("Rotate 180 degrees");
@@ -260,12 +308,14 @@ void accel_calibration()
         float R1_yz = sqrt(pow(g.my_yz_0,2)+pow(g.mz_yz_0,2));
         float R2_yz = sqrt(pow(my_yz_180,2)+pow(mz_yz_180,2));
         g.mag_offset_x = (R1_yz+R2_yz)/2;
+        startLight(green, 1, 5, 6);
  }
 
        else if (calibrationStep==8){
         //Serial.print(" Place with positive xy axis");
         float mx_xz_0 = g.magRaw[0];
         float mz_xz_0 = g.magRaw[2];
+        startLight(green, 1, 6, 7);
  }
         else if (calibrationStep==9){
         //Serial.print("Rotate 180 degrees");
@@ -274,7 +324,8 @@ void accel_calibration()
 
         float R1_xz = sqrt(pow(g.mx_xz_0,2)+pow(g.mz_xz_0,2));
         float R2_xz = sqrt(pow(mx_xz_180,2)+pow(mz_xz_180,2));
-        g.mag_offset_x = (R1_xz+R2_xz)/2;          
+        g.mag_offset_x = (R1_xz+R2_xz)/2;  
+        startLight(green, 1, 7, 8);        
  }     
     else if (calibrationStep==10){
         //float gForce_fake[3] = {1,2,3};
@@ -320,17 +371,69 @@ void accel_calibration()
         ///v.Print((float*)Norm_transpose, L,N, "Transpose of nomalized vect: ");
         float final_gForce[3][1];
         v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose,M,N,L,(float*)final_gForce);
-        //v.Print((float*)final_gForce,M,L,"Final gForce: ");   
+        //v.Print((float*)final_gForce,M,L,"Final gForce: ");  
+        startLight(green, 1, 8, 9); 
                    
 }
 
  else if (calibrationStep>10) {
-        
+    static int k=1;
+    if (k==1){
+        startLight(green,50,9,16); 
+        startLight(off, 1, 0, 16);
+        delay(100);
+        startLight(green, 1, 0, 16);
+        delay(100);
+        startLight(off, 1, 0, 16);
+        delay(100);
+        startLight(green, 1, 0, 16);
+        delay(100);
+        startLight(off, 1, 0, 16);
+        delay(100);
+        startLight(purple, 1, 0, 16);
+        k++;}
+    else{
+        static int holdcount=0;
         val=analogRead(potPin);
         
         kneeAngle=(140.0/(highEnd-lowEnd))*(val-offset);
-        
-        //BTserial.println(kneeAngle);
+
+        if (digitalRead(buttonPin)==HIGH) {
+            while(digitalRead(buttonPin)==HIGH) {
+                holdcount++;
+                delay(1);
+                if (holdcount==1500){
+                    if (savedCount <= 9 && !flag) {
+                       saved[savedCount] = kneeAngle;
+                       //BTserial.println(saved[savedCount]);
+                       savedCount++;
+                       loopCount = savedCount;
+                    } else {
+                       if (savedCount == 10)
+                          savedCount = 0;
+                    
+                       BTserial.print("Overwriting Saved Position: ");
+                       BTserial.println(savedCount);
+                       flag = 1;
+                       saved[savedCount] = kneeAngle;
+                       BTserial.println(saved[savedCount]);
+                       savedCount++;
+                    }
+                       
+                    startLight(off, 1, 0, 16);
+                    delay(100);
+                    startLight(blue, 1, 0, 16);
+                    delay(400);
+                    startLight(off, 1, 0, 16);
+                    delay(100);
+                    startLight(purple, 1, 0, 16);
+                    BTserial.print("store me: ");
+                    BTserial.println(kneeAngle);
+                    holdcount=0;
+                    return;
+               }
+           }
+       }
         float gForce_transpose2[3][1];
           float gF_Norm[3];
           v.Vector_Norm(g.gForce,gF_Norm);
@@ -367,6 +470,28 @@ void accel_calibration()
           BTserial.print("Phi accel: ");
           BTserial.print(phi);
           BTserial.println();
+          BTserial.print("Knee Angle: ");
+          BTserial.print(kneeAngle);
+          BTserial.println();
+          BTserial.println(saved[0]);
+
+          while (counter < loopCount) {
+            BTserial.print("Saved Value: ");
+            BTserial.println(saved[counter]);
+            if (saved[counter]) {
+              //BTserial.println("in loop");
+               if ((abs(kneeAngle - saved[0]) <= 10) && (abs(kneeAngle - saved[0]) > 3)) {
+                  startLight(yellow, 1, 0, 16);
+               }
+               else if ((abs(kneeAngle - saved[0]) <= 3)) {
+                  startLight(green, 1, 0, 16);
+               }
+               else
+                  startLight(red,1,0,16);
+            }
+            counter++;
+          }
+          
 
 //          float finalAngles[4] = {};
 //          finalAngles[0] = kneeAngle;
@@ -403,12 +528,12 @@ void accel_calibration()
           Serial.print(phi_mag);
           Serial.println();
           
-//          BTserial.println(kneeAngle);
+         // BTserial.println(kneeAngle);
 //          BTserial.println(theta);
 //          BTserial.println(psi);
 //          BTserial.println(phi);
         delay(10);
- }
+ }}
 // BTserial.println("calibration step: ");
 // BTserial.println(calibrationStep);
 }
