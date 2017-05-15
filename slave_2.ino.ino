@@ -6,7 +6,6 @@
 #include <Adafruit_NeoPixel.h>
 
 #define PIN 6
-
  
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = pin number (most are valid)
@@ -415,7 +414,7 @@ void accel_calibration()
             while(digitalRead(buttonPin)==HIGH) {
                 holdcount++;
                 delay(1);
-                if (holdcount==1500){        
+                if (holdcount==1500){     
                     if (loopCount == 6) {
                       startLight(off, 1, 0, 16);
                       delay(100);
@@ -512,6 +511,7 @@ void accel_calibration()
           lastVerifyState = verifyState; 
           if (verifyPushCounter == 6 || verifyPushCounter == loopCount)
              verifyPushCounter = 0;
+          
 
           verifyCount = 0;
           if (digitalRead(verifyPin)==HIGH) {
@@ -553,9 +553,11 @@ void accel_calibration()
           if (verifyFlag) {
                 startLight(off, 1, 4, 5); 
                 startLight(off, 1, 11, 12);
-                startLight(dark_blue, 1, 5, 5 + loopCount);                   
+                startLight(dark_blue, 1, 5, 5 + loopCount); 
+                if (verifyPushCounter == -1)
+                    verifyPushCounter = 0;                 
                 if (saved[verifyPushCounter] != -1) {
-                   startLight(yellow, 1, 5 + verifyPushCounter, 6 + verifyPushCounter);
+                     startLight(yellow, 1, 5 + verifyPushCounter, 6 + verifyPushCounter);
                    /*startLight(yellow, 1, 5 + loopCount, 5 + verifyPushCounter - 1);
                    startLight(off, 1, 5 + verifyPushCounter, 11);       
                    startLight(yellow, 1, 5 + verifyPushCounter, 11);*/
