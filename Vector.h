@@ -23,7 +23,9 @@ class Vector {
     void Multiply(float* A, float* B, int m, int p, int n, float* C);
     void Transpose(float* A, int m, int n, float* C);
     void Print(float* A, int m, int n, String label);
-
+    float Average(float* array4, int s);
+    int Invert(float* A, int n);
+    void SumElements(float dataIn[3],int N,float dataOut);
 };
 
 #endif

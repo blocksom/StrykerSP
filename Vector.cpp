@@ -184,6 +184,28 @@ void Vector::Transpose(float* A, int m, int n, float* C)
       C[m*j+i]=A[n*i+j];
 }
 
+// Average of a Matrix
+
+float Vector::Average(float* array4, int s)
+{
+      //int s=20;              //Array size
+      //int array[m];          //Declaring array
+      float sum=0;                
+      for(int i=0;i<s;i++)   //Loop which inputs arrays data and
+                                //Calculates its sum
+      {
+              //cout<<"Enter element number "<<i+1<<endl;
+              array4[i];
+              sum=sum+array4[i];
+      }
+      float Ave;
+      Ave = sum/s;
+      return Ave;
+      //Now calling division function to find the average...
+      //cout<<"Average of array elements is "<<division(sum,size);
+      
+}
+
 // Matrix Printing Routine
 // Uses tabs to separate numbers under assumption printed float width won't cause problems
 void Vector::Print(float* A, int m, int n, String label){
@@ -200,4 +222,103 @@ void Vector::Print(float* A, int m, int n, String label){
   }
 }
 
+//Matrix Inversion Routine
+// * This function inverts a matrix based on the Gauss Jordan method.
+// * Specifically, it uses partial pivoting to improve numeric stability.
+// * The algorithm is drawn from those presented in
+//   NUMERICAL RECIPES: The Art of Scientific Computing.
+// * The function returns 1 on success, 0 on failure.
+// * NOTE: The argument is ALSO the result matrix, meaning the input matrix is REPLACED
+int Vector::Invert(float* A, int n)
+{
+    // A = input matrix AND result matrix
+    // n = number of rows = number of columns in A (n x n)
+    int pivrow;     // keeps track of current pivot row
+    int k,i,j;      // k: overall index along diagonal; i: row index; j: col index
+    int pivrows[n]; // keeps track of rows swaps to undo at end
+    float tmp;      // used for finding max value and making column swaps
+ 
+    for (k = 0; k < n; k++)
+    {
+        // find pivot row, the row with biggest entry in current column
+        tmp = 0;
+        for (i = k; i < n; i++)
+        {
+            if (abs(A[i*n+k]) >= tmp)   // 'Avoid using other functions inside abs()?'
+            {
+                tmp = abs(A[i*n+k]);
+                pivrow = i;
+            }
+        }
+ 
+        // check for singular matrix
+        if (A[pivrow*n+k] == 0.0f)
+        {
+            Serial.println("Inversion failed due to singular matrix");
+            return 0;
+        }
+ 
+        // Execute pivot (row swap) if needed
+        if (pivrow != k)
+        {
+            // swap row k with pivrow
+            for (j = 0; j < n; j++)
+            {
+                tmp = A[k*n+j];
+                A[k*n+j] = A[pivrow*n+j];
+                A[pivrow*n+j] = tmp;
+            }
+        }
+        pivrows[k] = pivrow;    // record row swap (even if no swap happened)
+ 
+        tmp = 1.0f/A[k*n+k];    // invert pivot element
+        A[k*n+k] = 1.0f;        // This element of input matrix becomes result matrix
+ 
+        // Perform row reduction (divide every element by pivot)
+        for (j = 0; j < n; j++)
+        {
+            A[k*n+j] = A[k*n+j]*tmp;
+        }
+ 
+        // Now eliminate all other entries in this column
+        for (i = 0; i < n; i++)
+        {
+            if (i != k)
+            {
+                tmp = A[i*n+k];
+                A[i*n+k] = 0.0f;  // The other place where in matrix becomes result mat
+                for (j = 0; j < n; j++)
+                {
+                    A[i*n+j] = A[i*n+j] - A[k*n+j]*tmp;
+                }
+            }
+        }
+    }
+ 
+    // Done, now need to undo pivot row swaps by doing column swaps in reverse order
+    for (k = n-1; k >= 0; k--)
+    {
+        if (pivrows[k] != k)
+        {
+            for (i = 0; i < n; i++)
+            {
+                tmp = A[i*n+k];
+                A[i*n+k] = A[i*n+pivrows[k]];
+                A[i*n+pivrows[k]] = tmp;
+            }
+        }
+    }
+    return 1;
+}
+
+// Addition of elements of array
+
+void Vector::SumElements(float dataIn[3],int N, float dataOut){;
+dataOut = 0;
+int i;
+      for (i=0; i<N; i++){
+     
+        dataOut=  dataOut+dataIn[i];
+      }
+}
 
