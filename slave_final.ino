@@ -217,9 +217,45 @@ void recordMagRegisters(){
    } // end of if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
 } // end of void recordMagRegisters()
 
+void magcalMPU9250(float * dest1) 
+{
+ uint16_t ii = 0, sample_count = 0;
+  int32_t mag_bias[3] = {0, 0, 0};
+  int16_t mag_max[3] = {-32767, -32767, -32767}, mag_min[3] = {32767, 32767, 32767}, mag_temp[3] = {0, 0, 0};
+ 
+  //Serial.println("Mag Calibration: Wave device in a figure eight until done!");
+  delay(4000);
+  
+   sample_count = 64;
+   for(ii = 0; ii < sample_count; ii++) {
+    myIMU.readMagData(mag_temp);  // Read the mag data   
+    for (int jj = 0; jj < 3; jj++) {
+      if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
+      if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
+    }
+    delay(135);  // at 8 Hz ODR, new mag data is available every 125 ms
+   }
+
+//    Serial.println("mag x min/max:"); Serial.println(mag_max[0]); Serial.println(mag_min[0]);
+//    Serial.println("mag y min/max:"); Serial.println(mag_max[1]); Serial.println(mag_min[1]);
+//    Serial.println("mag z min/max:"); Serial.println(mag_max[2]); Serial.println(mag_min[2]);
+
+    mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
+    mag_bias[1]  = (mag_max[1] + mag_min[1])/2;  // get average y mag bias in counts
+    mag_bias[2]  = (mag_max[2] + mag_min[2])/2;  // get average z mag bias in counts
+    
+    dest1[0] = (float) mag_bias[0]*myIMU.mRes*myIMU.magCalibration[0];  // save mag biases in G for main program
+    dest1[1] = (float) mag_bias[1]*myIMU.mRes*myIMU.magCalibration[1]; 
+    dest1[2] = (float) mag_bias[2]*myIMU.mRes*myIMU.magCalibration[2];        
+
+   //BTserial.println("Mag Calibration done!"); 
+}
+
 void IMU_calibration() 
-{   static int saved[6];
+{   
+   static int saved[6];
    static int savedCount = 0, loopCount = 0, flag = 0;
+   float *dest1;
    int counter = 0, i = 0;
     
     // read the pushbutton input pin:
@@ -236,21 +272,15 @@ void IMU_calibration()
         // if the current state is LOW then the button
         // wend from on to off:
          if (calibrationStep==1){
-            BTserial.println("Place brace in closed state and press button to continue.");
+            BTserial.println("Cycle brace through most open and most closed positions.");
          }
          else if(calibrationStep==2){
-           BTserial.println("Place brace in open state and press button to continue");
+           BTserial.println("Wave device in figure eight until done!");
          }
          else if(calibrationStep==3){
-            BTserial.println("Lock brace at 0 degrees and press button to continue.");
-         } 
-        else if(calibrationStep==4){
-          BTserial.print("Wave device in figure eight until done!");
-        }
-        else if(calibrationStep==5){
             BTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
          } 
-        else if(calibrationStep==6){
+         else if(calibrationStep==4){
             BTserial.println("Calibration completed.");
          }   
       } // else
@@ -265,48 +295,18 @@ void IMU_calibration()
   
     
     if (calibrationStep==1){
-          lowEnd=analogRead(potPin);
-          startLight(red, 1, 0, 9);
-    }
-    else if(calibrationStep==2){
-         highEnd=analogRead(potPin);
-         startLight(green, 1, 0, 1);
-    }
-    else if(calibrationStep==3){
-         offset=analogRead(potPin);
-         startLight(green, 1, 1, 2);
-    }  
-       else if(calibrationStep==4){
-//    uint16_t ii = 0, sample_count = 0;
-//    int32_t mag_bias[3] = {0, 0, 0}, mag_scale[3] = {0, 0, 0};
-//    int16_t mag_max[3] = {0x8000, 0x8000, 0x8000}, mag_min[3] = {0x7FFF, 0x7FFF, 0x7FFF}, mag_temp[3] = {0, 0, 0};
-// 
-//    sample_count = 128;
-// 
-//    for(ii = 0; ii < sample_count; ii++) {
-//        myIMU.readMagData(mag_temp);  // Read the mag data
-//        for (int jj = 0; jj < 3; jj++) {
-//            if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
-//            if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
-//        }
-//    delay(135);  // at 8 Hz ODR, new mag data is available every 125 ms
-//    }
-//    // Get hard iron correction
-//    mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
-//    mag_bias[1]  = (mag_max[1] + mag_min[1])/2;  // get average y mag bias in counts
-//    mag_bias[2]  = (mag_max[2] + mag_min[2])/2;  // get average z mag bias in counts
-//
-//    float dest[3];
-//    dest[0] = (float) mag_bias[0]*myIMU.mRes*myIMU.magCalibration[0];  // save mag biases in G for main program
-//    dest[1] = (float) mag_bias[1]*myIMU.mRes*myIMU.magCalibration[1];
-//    dest[2] = (float) mag_bias[2]*myIMU.mRes*myIMU.magCalibration[2];
-//    BTserial.println("mag Calibration Complete");
-//    BTserial.println(dest[0]);
-//    BTserial.println(dest[1]);
-//    BTserial.println(dest[2]);
-       } // end of calibrationStep 4
+          if (lowEnd>analogRead(potPin)){
+          lowEnd=analogRead(potPin);}
+       if(highEnd<analogRead(potPin)){
+          highEnd=analogRead(potPin);}
+          startLight(red, 1, 0, 6);
+    } // end calibration step 1
+//    else if(calibrationStep==2) {
+//        magcalMPU9250(dest1) ;
+//        startLight(green, 1, 0, 2); 
+//       } // end of calibrationStep 2
        
-      else if (calibrationStep==5) {
+      else if (calibrationStep==2) {
       float Norm[3];
       v.Vector_Norm(g.gForce,Norm);           //Normalizing the output of accelerometer
       float correct_vect[3] = {0,0,1};            //Definining what the output should be
@@ -331,15 +331,11 @@ void IMU_calibration()
 //      v.Transpose((float*)g.gForce, L,N, (float*)gForce_transpose); // Transpose of normalized accel vector
 //      float final_gForce[3][1];
 //      v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose,M,N,L,(float*)final_gForce); 
-      float dest2[3] ;
-        dest2[0] = {95.20};
-        dest2[1] = {218.28};
-        dest2[2] = {293.15};
      
       float mag_HIO[3];
-      mag_HIO[0] = {g.magRaw[0]-dest2[0]};
-      mag_HIO[1] = {g.magRaw[1]-dest2[1]};
-      mag_HIO[2] = {g.magRaw[2]-dest2[2]};
+      mag_HIO[0] = {g.magRaw[0]-dest1[0]};
+      mag_HIO[1] = {g.magRaw[1]-dest1[1]};
+      mag_HIO[2] = {g.magRaw[2]-dest1[2]};
       float Norm_mag[3];
       v.Vector_Norm(mag_HIO,Norm_mag);
        
@@ -352,11 +348,14 @@ void IMU_calibration()
       g.pitch = atan(-Norm[0]/((Norm[1]*sin(g.roll))+(Norm[2]*cos(g.roll))));
       //delay(10);
       g.yaw = atan2(-Norm_mag[2],((Norm_mag[0]*cos(g.pitch))+(Norm_mag[1]*sin(g.pitch))));
+
+      offset=analogRead(potPin);
         
-//startLight(green, 1, 8, 9); 
-   }   // end of Calibration step 5 
+      startLight(green, 1, 2, 4);
+ 
+   }   // end of Calibration step 3 
                     
-        else if(calibrationStep>5){  
+        else if(calibrationStep>3){  
         static int k=1;
       if (k==1){
          startLight(green,50,9,16); 
@@ -420,6 +419,8 @@ void IMU_calibration()
                     BTserial.println(kneeAngle);
                     holdcount=0;
                     return;
+
+                  
                }
            }
          }
@@ -440,10 +441,10 @@ void IMU_calibration()
         v.Multiply((float*)Rz,(float*)g.Calibration_Matrix,M,N,N,(float*)Cal_Final);
 
          // Hard Iron Offset
-        float dest1[3] ;
-        dest1[0] = {95.20};
-        dest1[1] = {218.28};
-        dest1[2] = {293.15};
+//        float dest1[3] ;
+//        dest1[0] = {95.20};
+//        dest1[1] = {218.28};
+//        dest1[2] = {293.15};
         
         // Calculating angles 
         
