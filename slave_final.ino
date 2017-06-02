@@ -38,6 +38,9 @@ class GForce {
   float Calibration_Matrix[3][3] = {};
   float final_gForce[3][0] = {};
   float magRaw[3] = {};
+  float roll;
+  float pitch;
+  float yaw;
 };
 
 long accelX, accelY, accelZ;
@@ -71,8 +74,8 @@ int lastVerifyState = 0;
 int verifyStep;
 static int verifyCount = 0;
 
-int lowEnd=1023;
-int highEnd=0;
+int lowEnd=0;
+int highEnd=1024;
 int offset=0;
 int val=0;
 int kneeAngle=0;
@@ -233,15 +236,21 @@ void IMU_calibration()
         // if the current state is LOW then the button
         // wend from on to off:
          if (calibrationStep==1){
-            BTserial.println("Cycle brace through most open and most closed positions");
+            BTserial.println("Place brace in closed state and press button to continue.");
          }
-        else if(calibrationStep==2){
-          BTserial.print("Wave device in figure eight until done!");
-        }
-        else if(calibrationStep==3){
-            BTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
+         else if(calibrationStep==2){
+           BTserial.println("Place brace in open state and press button to continue");
+         }
+         else if(calibrationStep==3){
+            BTserial.println("Lock brace at 0 degrees and press button to continue.");
          } 
         else if(calibrationStep==4){
+          BTserial.print("Wave device in figure eight until done!");
+        }
+        else if(calibrationStep==5){
+            BTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
+         } 
+        else if(calibrationStep==6){
             BTserial.println("Calibration completed.");
          }   
       } // else
@@ -255,14 +264,19 @@ void IMU_calibration()
     delay(50);
   
     
-    if (calibrationStep==1) {
-       if (lowEnd>analogRead(potPin)){
-          lowEnd=analogRead(potPin);}
-       if(highEnd<analogRead(potPin)){
-          highEnd=analogRead(potPin);}
-          startLight(red, 1, 0, 6);
+    if (calibrationStep==1){
+          lowEnd=analogRead(potPin);
+          startLight(red, 1, 0, 9);
+    }
+    else if(calibrationStep==2){
+         highEnd=analogRead(potPin);
+         startLight(green, 1, 0, 1);
+    }
+    else if(calibrationStep==3){
+         offset=analogRead(potPin);
+         startLight(green, 1, 1, 2);
     }  
-       else if(calibrationStep==2) {
+       else if(calibrationStep==4){
 //    uint16_t ii = 0, sample_count = 0;
 //    int32_t mag_bias[3] = {0, 0, 0}, mag_scale[3] = {0, 0, 0};
 //    int16_t mag_max[3] = {0x8000, 0x8000, 0x8000}, mag_min[3] = {0x7FFF, 0x7FFF, 0x7FFF}, mag_temp[3] = {0, 0, 0};
@@ -290,10 +304,9 @@ void IMU_calibration()
 //    BTserial.println(dest[0]);
 //    BTserial.println(dest[1]);
 //    BTserial.println(dest[2]);
-       startLight(green, 1, 0, 2);   
        } // end of calibrationStep 4
        
-      else if (calibrationStep==3) {
+      else if (calibrationStep==5) {
       float Norm[3];
       v.Vector_Norm(g.gForce,Norm);           //Normalizing the output of accelerometer
       float correct_vect[3] = {0,0,1};            //Definining what the output should be
@@ -314,21 +327,39 @@ void IMU_calibration()
       float Add_1[3][3];
       v.Add((float*)identity,(float*) SSC,M,N,(float*)Add_1);
       v.Add((float*)Add_1,(float*) new_SSC,M,N,(float*)g.Calibration_Matrix);
-      float gForce_transpose[3][1];
-      v.Transpose((float*)g.gForce, L,N, (float*)gForce_transpose); // Transpose of normalized accel vector
-      float final_gForce[3][1];
-      v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose,M,N,L,(float*)final_gForce); 
-      
-      offset=analogRead(potPin);
+//      float gForce_transpose[3][1];
+//      v.Transpose((float*)g.gForce, L,N, (float*)gForce_transpose); // Transpose of normalized accel vector
+//      float final_gForce[3][1];
+//      v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose,M,N,L,(float*)final_gForce); 
+      float dest2[3] ;
+        dest2[0] = {95.20};
+        dest2[1] = {218.28};
+        dest2[2] = {293.15};
+     
+      float mag_HIO[3];
+      mag_HIO[0] = {g.magRaw[0]-dest2[0]};
+      mag_HIO[1] = {g.magRaw[1]-dest2[1]};
+      mag_HIO[2] = {g.magRaw[2]-dest2[2]};
+      float Norm_mag[3];
+      v.Vector_Norm(mag_HIO,Norm_mag);
+       
+       // Find pitch and yaw during initial pose
+//      float roll;
+//      float pitch;
+//      float yaw;
+      g.roll = atan2(Norm[1],Norm[2]);
+      //delay(10);
+      g.pitch = atan(-Norm[0]/((Norm[1]*sin(g.roll))+(Norm[2]*cos(g.roll))));
+      //delay(10);
+      g.yaw = atan2(-Norm_mag[2],((Norm_mag[0]*cos(g.pitch))+(Norm_mag[1]*sin(g.pitch))));
         
-      startLight(green, 1, 2, 4); 
-        
+//startLight(green, 1, 8, 9); 
    }   // end of Calibration step 5 
                     
-        else if(calibrationStep>3){  
+        else if(calibrationStep>5){  
         static int k=1;
       if (k==1){
-         startLight(green,50,4,16); 
+         startLight(green,50,9,16); 
          startLight(off, 1, 0, 16);
          delay(100);
          startLight(green, 1, 0, 16);
@@ -392,36 +423,33 @@ void IMU_calibration()
                }
            }
          }
-         
-         float gF_Norm[3];
-         float mag_Norm[3];
-         v.Vector_Norm(g.gForce,gF_Norm);
-         v.Vector_Norm(g.magRaw,mag_Norm);
 
-         float gForce_transpose2[3][1];
-         float mag_transpose[3][1];
-         v.Transpose((float*)gF_Norm, L,N, (float*)gForce_transpose2);
-         v.Transpose((float*)mag_Norm, L,N, (float*)mag_transpose);
-         
-         float final_gForce [3];
-         float final_mag [3];
-         //Multiplication function
-         v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose2,M,N,L,(float*)final_gForce);
-         v.Multiply((float*)g.Calibration_Matrix,(float*)mag_transpose,M,N,L,(float*)final_mag);
-         
+        // Create Rz rotation matrix
+        float Rz[3][3];
+        Rz[0][0] = {cos(g.yaw)};
+        Rz[0][1] = {sin(g.yaw)};
+        Rz[0][2] = {0};
+        Rz[1][0] = {-sin(g.yaw)};
+        Rz[1][1] = {cos(g.yaw)};
+        Rz[1][2] = {0};
+        Rz[2][0] = {0};
+        Rz[2][1] = {0};
+        Rz[2][2] = {1};
 
-        // Hard Iron Offset
+        float Cal_Final[3][3];
+        v.Multiply((float*)Rz,(float*)g.Calibration_Matrix,M,N,N,(float*)Cal_Final);
+
+         // Hard Iron Offset
         float dest1[3] ;
-        dest1[0] = {-361};
-        dest1[1] = {523};
-        dest1[2] = {359.89};
+        dest1[0] = {95.20};
+        dest1[1] = {218.28};
+        dest1[2] = {293.15};
         
         // Calculating angles 
         
         float phi_rad;
         float theta_rad;
         float psi_rad;  
-        int sampling= 20;
         float accelX[20];
         float accelY[20];
         float accelZ[20];
@@ -430,16 +458,15 @@ void IMU_calibration()
         float magnetZ[20];
         int i;
         
-        for(i=0; i<20; i++) {
-          accelX[i] = final_gForce[0];
-          accelY[i] = final_gForce[1];
-          accelZ[i] = final_gForce[2];
-          magnetX[i] = final_mag[0];
-          magnetY[i] = final_mag[1];
-          magnetZ[i] = final_mag[2];
+        for(i=0; i<20; i++){
+          accelX[i] = g.gForce[0];
+          accelY[i] = g.gForce[1];
+          accelZ[i] = g.gForce[2];
+          magnetX[i] = g.magRaw[0];//-dest1[0];
+          magnetY[i] = g.magRaw[1];//-dest1[1];
+          magnetZ[i] = g.magRaw[2];//-dest1[2];
         }
-  
-  
+    
         float mean_accX = v.Average(accelX, 20);
         float mean_accY = v.Average(accelY,20);
         float mean_accZ = v.Average(accelZ,20);
@@ -448,14 +475,34 @@ void IMU_calibration()
         float mean_magZ = v.Average(magnetZ,20);
 
         //need to normalize mag and acc and hard iron
-        //float accel_norm = sqrt((pow(mean_accX,2)+pow(mean_accY,2)+pow(mean_accZ,2))/3);
-        mean_accX = mean_accX; // /accel_norm;
-        mean_accY = mean_accY; // /accel_norm;
-        mean_accZ = mean_accZ; // /accel_norm;
-        //float mag_norm = sqrt((pow(mean_magX,2)+pow(mean_magY,2)+pow(mean_magZ,2))/3);
-        mean_magX = mean_magX; // /mag_norm;
-        mean_magY = mean_magY; // /mag_norm;
-        mean_magZ = mean_magZ; // /mag_norm;
+         float mean_accel[3];
+         mean_accel[0] = mean_accX;
+         mean_accel[1] = mean_accY;
+         mean_accel[2] = mean_accZ;
+
+         float mean_mag[3];
+         mean_mag[0] = mean_magX;
+         mean_mag[1] = mean_magY;
+         mean_mag[2] = mean_magZ;
+
+         float gF_Norm[3];
+         float mag_Norm[3];
+         v.Vector_Norm(mean_accel,gF_Norm);
+         v.Vector_Norm(mean_mag,mag_Norm);
+
+         float gForce_transpose2[3][1];
+         float mag_transpose[3][1];
+         v.Transpose((float*)gF_Norm, L,N, (float*)gForce_transpose2);
+         v.Transpose((float*)mag_Norm, L,N, (float*)mag_transpose);
+
+
+        float final_gForce [3];
+         float final_mag [3];
+         //Multiplication function
+         v.Multiply((float*)Cal_Final,(float*)gForce_transpose2,M,N,L,(float*)final_gForce);
+         v.Multiply((float*)Cal_Final,(float*)mag_transpose,M,N,L,(float*)final_mag);
+         
+        
         float HIO_norm[3];
         v.Vector_Norm(dest1,HIO_norm);
         delay(100);
