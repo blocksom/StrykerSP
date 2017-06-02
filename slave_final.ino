@@ -71,8 +71,8 @@ int lastVerifyState = 0;
 int verifyStep;
 static int verifyCount = 0;
 
-int lowEnd=0;
-int highEnd=1024;
+int lowEnd=1023;
+int highEnd=0;
 int offset=0;
 int val=0;
 int kneeAngle=0;
@@ -233,21 +233,15 @@ void IMU_calibration()
         // if the current state is LOW then the button
         // wend from on to off:
          if (calibrationStep==1){
-            BTserial.println("Place brace in closed state and press button to continue.");
+            BTserial.println("Cycle brace through most open and most closed positions");
          }
-         else if(calibrationStep==2){
-           BTserial.println("Place brace in open state and press button to continue");
-         }
-         else if(calibrationStep==3){
-            BTserial.println("Lock brace at 0 degrees and press button to continue.");
-         } 
-        else if(calibrationStep==4){
+        else if(calibrationStep==2){
           BTserial.print("Wave device in figure eight until done!");
         }
-        else if(calibrationStep==5){
+        else if(calibrationStep==3){
             BTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
          } 
-        else if(calibrationStep==6){
+        else if(calibrationStep==4){
             BTserial.println("Calibration completed.");
          }   
       } // else
@@ -261,19 +255,14 @@ void IMU_calibration()
     delay(50);
   
     
-    if (calibrationStep==1){
-          lowEnd=analogRead(potPin);
-          startLight(red, 1, 0, 9);
-    }
-    else if(calibrationStep==2){
-         highEnd=analogRead(potPin);
-         startLight(green, 1, 0, 1);
-    }
-    else if(calibrationStep==3){
-         offset=analogRead(potPin);
-         startLight(green, 1, 1, 2);
+    if (calibrationStep==1) {
+       if (lowEnd>analogRead(potPin)){
+          lowEnd=analogRead(potPin);}
+       if(highEnd<analogRead(potPin)){
+          highEnd=analogRead(potPin);}
+          startLight(red, 1, 0, 6);
     }  
-       else if(calibrationStep==4){
+       else if(calibrationStep==2) {
 //    uint16_t ii = 0, sample_count = 0;
 //    int32_t mag_bias[3] = {0, 0, 0}, mag_scale[3] = {0, 0, 0};
 //    int16_t mag_max[3] = {0x8000, 0x8000, 0x8000}, mag_min[3] = {0x7FFF, 0x7FFF, 0x7FFF}, mag_temp[3] = {0, 0, 0};
@@ -301,9 +290,10 @@ void IMU_calibration()
 //    BTserial.println(dest[0]);
 //    BTserial.println(dest[1]);
 //    BTserial.println(dest[2]);
+       startLight(green, 1, 0, 2);   
        } // end of calibrationStep 4
        
-      else if (calibrationStep==5) {
+      else if (calibrationStep==3) {
       float Norm[3];
       v.Vector_Norm(g.gForce,Norm);           //Normalizing the output of accelerometer
       float correct_vect[3] = {0,0,1};            //Definining what the output should be
@@ -328,13 +318,17 @@ void IMU_calibration()
       v.Transpose((float*)g.gForce, L,N, (float*)gForce_transpose); // Transpose of normalized accel vector
       float final_gForce[3][1];
       v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose,M,N,L,(float*)final_gForce); 
-      startLight(green, 1, 8, 9); 
+      
+      offset=analogRead(potPin);
+        
+      startLight(green, 1, 2, 4); 
+        
    }   // end of Calibration step 5 
                     
-        else if(calibrationStep>5){  
+        else if(calibrationStep>3){  
         static int k=1;
       if (k==1){
-         startLight(green,50,9,16); 
+         startLight(green,50,4,16); 
          startLight(off, 1, 0, 16);
          delay(100);
          startLight(green, 1, 0, 16);
