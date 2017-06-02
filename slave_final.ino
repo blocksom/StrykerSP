@@ -421,16 +421,16 @@ void IMU_calibration()
         float phi_rad;
         float theta_rad;
         float psi_rad;  
-        int sampling= 30;
-        float accelX[sampling];
-        float accelY[sampling];
-        float accelZ[sampling];
-        float magnetX[sampling];
-        float magnetY[sampling];
-        float magnetZ[sampling];
+        int sampling= 20;
+        float accelX[20];
+        float accelY[20];
+        float accelZ[20];
+        float magnetX[20];
+        float magnetY[20];
+        float magnetZ[20];
         int i;
         
-        for(i=0; i<sampling; i++){
+        for(i=0; i<20; i++) {
           accelX[i] = final_gForce[0];
           accelY[i] = final_gForce[1];
           accelZ[i] = final_gForce[2];
@@ -440,12 +440,12 @@ void IMU_calibration()
         }
   
   
-        float mean_accX = v.Average(accelX, sampling);
-        float mean_accY = v.Average(accelY,sampling);
-        float mean_accZ = v.Average(accelZ,sampling);
-        float mean_magX = v.Average(magnetX,sampling);
-        float mean_magY = v.Average(magnetY,sampling);
-        float mean_magZ = v.Average(magnetZ,sampling);
+        float mean_accX = v.Average(accelX, 20);
+        float mean_accY = v.Average(accelY,20);
+        float mean_accZ = v.Average(accelZ,20);
+        float mean_magX = v.Average(magnetX,20);
+        float mean_magY = v.Average(magnetY,20);
+        float mean_magZ = v.Average(magnetZ,20);
 
         //need to normalize mag and acc and hard iron
         //float accel_norm = sqrt((pow(mean_accX,2)+pow(mean_accY,2)+pow(mean_accZ,2))/3);
