@@ -536,6 +536,12 @@ void IMU_calibration()
         Bfx = (((mean_magX-HIO_norm[0])*cos(theta_rad))+((mean_magY-HIO_norm[1])*sin(theta_rad)*sin(phi_rad))+((mean_magZ-HIO_norm[2])*sin(theta_rad)*cos(phi_rad)));
         Bfy = (((mean_magZ-HIO_norm[2])*sin(phi_rad)) - ((mean_magY-HIO_norm[1])*cos(phi_rad)));
         psi_rad = atan2(Bfy,Bfx);
+
+        if(g.yaw<0){
+          psi_rad = psi_rad+g.yaw;
+        } else {
+          psi_rad = psi_rad-g.yaw; 
+        }
         
         float phi;
         float theta;
