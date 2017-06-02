@@ -272,13 +272,13 @@ void IMU_calibration()
         // if the current state is LOW then the button
         // wend from on to off:
          if (calibrationStep==1){
-            BTserial.println("Cycle brace through most open and most closed positions.");
+            BTserial.println("Fully open and close brace and press button to continue.");
          }
          else if(calibrationStep==2){
-           BTserial.println("Wave device in figure eight until done!");
+
          }
          else if(calibrationStep==3){
-            BTserial.println("Place leg such that it is at zero abd/add, zero flex/ext and zero int/ext and press button to finish calibration.");
+            BTserial.println("Place patient in reference configuration and press button to finish calibration.");
          } 
          else if(calibrationStep==4){
             BTserial.println("Calibration completed.");
@@ -301,12 +301,35 @@ void IMU_calibration()
           highEnd=analogRead(potPin);}
           startLight(red, 1, 0, 6);
     } // end calibration step 1
-//    else if(calibrationStep==2) {
-//        magcalMPU9250(dest1) ;
-//        startLight(green, 1, 0, 2); 
-//       } // end of calibrationStep 2
+    else if(calibrationStep==2) { 
+      startLight(green, 1, 0, 2);     
+      uint16_t ii = 0, sample_count = 0;
+      int32_t mag_bias[3] = {0, 0, 0};
+      int16_t mag_max[3] = {-32767, -32767, -32767}, mag_min[3] = {32767, 32767, 32767}, mag_temp[3] = {0, 0, 0};
+      
+       BTserial.println("Wave device in figure eight until done."); 
+       sample_count = 30000;
+       for(ii = 0; ii < sample_count; ii++) {
+        myIMU.readMagData(mag_temp);  // Read the mag data   
+        for (int jj = 0; jj < 3; jj++) {
+          if(mag_temp[jj] > mag_max[jj]) mag_max[jj] = mag_temp[jj];
+          if(mag_temp[jj] < mag_min[jj]) mag_min[jj] = mag_temp[jj];
+        }
+        //delay(135);  // at 8 Hz ODR, new mag data is available every 125 ms
+       }
+        BTserial.println("Figure eight done!"); 
+        mag_bias[0]  = (mag_max[0] + mag_min[0])/2;  // get average x mag bias in counts
+        mag_bias[1]  = (mag_max[1] + mag_min[1])/2;  // get average y mag bias in counts
+        mag_bias[2]  = (mag_max[2] + mag_min[2])/2;  // get average z mag bias in counts
+        
+        dest1[0] = (float) mag_bias[0]*myIMU.mRes*myIMU.magCalibration[0];  // save mag biases in G for main program
+        dest1[1] = (float) mag_bias[1]*myIMU.mRes*myIMU.magCalibration[1]; 
+        dest1[2] = (float) mag_bias[2]*myIMU.mRes*myIMU.magCalibration[2];        
+        buttonPushCounter++;
+        calibrationStep=3;
+       } // end of calibrationStep 2
        
-      else if (calibrationStep==2) {
+      else if (calibrationStep==3) {
       float Norm[3];
       v.Vector_Norm(g.gForce,Norm);           //Normalizing the output of accelerometer
       float correct_vect[3] = {0,0,1};            //Definining what the output should be
@@ -355,9 +378,10 @@ void IMU_calibration()
  
    }   // end of Calibration step 3 
                     
-        else if(calibrationStep>3){  
+        else if(calibrationStep>3){
         static int k=1;
       if (k==1){
+         startLight(green, 1, 4, 6);  
          startLight(green,50,9,16); 
          startLight(off, 1, 0, 16);
          delay(100);
@@ -426,26 +450,20 @@ void IMU_calibration()
          }
 
         // Create Rz rotation matrix
-        float Rz[3][3];
-        Rz[0][0] = {cos(g.yaw)};
-        Rz[0][1] = {sin(g.yaw)};
-        Rz[0][2] = {0};
-        Rz[1][0] = {-sin(g.yaw)};
-        Rz[1][1] = {cos(g.yaw)};
-        Rz[1][2] = {0};
-        Rz[2][0] = {0};
-        Rz[2][1] = {0};
-        Rz[2][2] = {1};
+//        float Rz[3][3];
+//        Rz[0][0] = {cos(g.yaw)};
+//        Rz[0][1] = {sin(g.yaw)};
+//        Rz[0][2] = {0};
+//        Rz[1][0] = {-sin(g.yaw)};
+//        Rz[1][1] = {cos(g.yaw)};
+//        Rz[1][2] = {0};
+//        Rz[2][0] = {0};
+//        Rz[2][1] = {0};
+//        Rz[2][2] = {1};
 
-        float Cal_Final[3][3];
-        v.Multiply((float*)Rz,(float*)g.Calibration_Matrix,M,N,N,(float*)Cal_Final);
-
-         // Hard Iron Offset
-//        float dest1[3] ;
-//        dest1[0] = {95.20};
-//        dest1[1] = {218.28};
-//        dest1[2] = {293.15};
-        
+//        float Cal_Final[3][3];
+//        v.Multiply((float*)Rz,(float*)g.Calibration_Matrix,M,N,N,(float*)Cal_Final);
+   
         // Calculating angles 
         
         float phi_rad;
@@ -500,8 +518,8 @@ void IMU_calibration()
         float final_gForce [3];
          float final_mag [3];
          //Multiplication function
-         v.Multiply((float*)Cal_Final,(float*)gForce_transpose2,M,N,L,(float*)final_gForce);
-         v.Multiply((float*)Cal_Final,(float*)mag_transpose,M,N,L,(float*)final_mag);
+         v.Multiply((float*)g.Calibration_Matrix,(float*)gForce_transpose2,M,N,L,(float*)final_gForce);
+         v.Multiply((float*)g.Calibration_Matrix,(float*)mag_transpose,M,N,L,(float*)final_mag);
          
         
         float HIO_norm[3];
