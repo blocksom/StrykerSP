@@ -189,9 +189,9 @@ void recordAccelRegisters() {
 GForce g;
 Vector v;
 void processAccelData(){
-  g.gForce[0] = (accelX / 16384.0)*-1;
-  g.gForce[1] = (accelY / 16384.0); 
-  g.gForce[2] = (accelZ / 16384.0)*-1;
+  g.gForce[0] = (accelZ / 16384.0)*(-1);
+  g.gForce[1] = (accelX / 16384.0)*(-1); 
+  g.gForce[2] = (accelY / 16384.0)*(-1);
     
 } // end of processAccelData()
 
@@ -210,9 +210,9 @@ void recordMagRegisters(){
                myIMU.magbias[1];
    myIMU.mz = (float)myIMU.magCount[2]*myIMU.mRes*myIMU.magCalibration[2] -
                myIMU.magbias[2];
-  g.magRaw[0] = (float)myIMU.mx;
-  g.magRaw[1] = (float)myIMU.my;
-  g.magRaw[2] = (float)myIMU.mz;
+  g.magRaw[0] = (float)myIMU.mz;
+  g.magRaw[1] = (float)myIMU.my * (-1);
+  g.magRaw[2] = (float)myIMU.mx * (-1);
   
    } // end of if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
 } // end of void recordMagRegisters()
@@ -366,9 +366,9 @@ void IMU_calibration()
 //      float roll;
 //      float pitch;
 //      float yaw;
-      g.roll = atan2(Norm[1],Norm[2]);
+      g.roll = atan2(Norm[2],Norm[1]);
       //delay(10);
-      g.pitch = atan(-Norm[0]/((Norm[1]*sin(g.roll))+(Norm[2]*cos(g.roll))));
+      g.pitch = atan(-Norm[0]/((Norm[2]*sin(g.roll))+(Norm[1]*cos(g.roll))));
       //delay(10);
       g.yaw = atan2(-Norm_mag[2],((Norm_mag[0]*cos(g.pitch))+(Norm_mag[1]*sin(g.pitch))));
 
@@ -481,9 +481,9 @@ void IMU_calibration()
           accelX[i] = g.gForce[0];
           accelY[i] = g.gForce[1];
           accelZ[i] = g.gForce[2];
-          magnetX[i] = g.magRaw[0];//-dest1[0];
-          magnetY[i] = g.magRaw[1];//-dest1[1];
-          magnetZ[i] = g.magRaw[2];//-dest1[2];
+          magnetX[i] = g.magRaw[0]; //-dest1[0];
+          magnetY[i] = g.magRaw[1]; //-dest1[1];
+          magnetZ[i] = g.magRaw[2]; //-dest1[2];
         }
     
         float mean_accX = v.Average(accelX, 20);
@@ -525,16 +525,16 @@ void IMU_calibration()
         float HIO_norm[3];
         v.Vector_Norm(dest1,HIO_norm);
         delay(100);
-        phi_rad = atan2(mean_accY,mean_accZ);
+        phi_rad = atan2(final_gForce[2],final_gForce[1]);
         
         delay(100);
-        theta_rad = atan((mean_accX*(-1))/((mean_accY*sin(phi_rad))+(mean_accZ*cos(phi_rad))));
+        theta_rad = atan((final_gForce[0]*(-1))/((final_gForce[2]*sin(phi_rad))+(final_gForce[1]*cos(phi_rad))));
         
         float Bfx;
         float Bfy;
         delay(100);
-        Bfx = (((mean_magX-HIO_norm[0])*cos(theta_rad))+((mean_magY-HIO_norm[1])*sin(theta_rad)*sin(phi_rad))+((mean_magZ-HIO_norm[2])*sin(theta_rad)*cos(phi_rad)));
-        Bfy = (((mean_magZ-HIO_norm[2])*sin(phi_rad)) - ((mean_magY-HIO_norm[1])*cos(phi_rad)));
+        Bfx = (((final_mag[0]-HIO_norm[0])*cos(theta_rad))+((final_mag[2]-HIO_norm[2])*sin(theta_rad)*sin(phi_rad))+((final_mag[1]-HIO_norm[1])*sin(theta_rad)*cos(phi_rad)));
+        Bfy = (((final_mag[1]-HIO_norm[1])*sin(phi_rad)) - ((final_mag[2]-HIO_norm[2])*cos(phi_rad)));
         psi_rad = atan2(Bfy,Bfx);
 
         if(g.yaw<0){
@@ -547,7 +547,7 @@ void IMU_calibration()
         float theta;
         float psi;
         phi = phi_rad*(180/3.1459265);
-        theta = theta_rad*(180/3.1459265);
+        theta = (-1)*theta_rad*(180/3.1459265);
         psi = (psi_rad*(180/3.1459265));
 
         BTserial.print("Roll: ");
