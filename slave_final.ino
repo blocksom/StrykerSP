@@ -158,7 +158,7 @@ void loop()
   float externalRotationAngle = 0;
 
   //SETUP VECTOR TO STORE POSITIONA INFORMATION AND VERIFICATION MODE
-  static int saved[6];
+  static int saved[6][4];
   static int savedCount = 0, loopCount = 0, flag = 0;
   float *dest1;
   int counter = 0, i = 0;
@@ -298,7 +298,10 @@ void loop()
           }
 
           if (savedCount <= 5 && !flag) {
-            saved[verifyPushCounter] = kneeAngle;
+            saved[verifyPushCounter][0] = kneeAngle;
+            saved[verifyPushCounter][1] = theta;
+            saved[verifyPushCounter][2] = phi;
+            saved[verifyPushCounter][3] = psi;            
 
             savedCount++;
             if (loopCount != 6)
@@ -308,10 +311,10 @@ void loop()
               savedCount = 0;
 
             flag = 1;
-            saved[savedCount] = kneeAngle;
-            //saved[savedCount, 1] = theta;
-            //saved[savedCount, 2] = phi;
-            //saved[savedCount, 3] = psi;
+            saved[savedCount][0] = kneeAngle;
+            saved[savedCount][1] = theta;
+            saved[savedCount][2] = phi;
+            saved[savedCount][3] = psi;
           }
 
           startLight(off, 1, 0, 16);
@@ -370,35 +373,34 @@ void loop()
 
     if (verifyFlag) {
       BTserial.print("v");      // tells GUI we're in verification mode (ascii 118)
-      BTserial.println();
       startLight(off, 1, 4, 5);
       startLight(off, 1, 11, 12);
       startLight(dark_blue, 1, 5, 5 + loopCount);
 
       if (verifyPushCounter == -1)
         verifyPushCounter = 0;
-      if (saved[verifyPushCounter] != -1) {
-        BTserial.print(saved[verifyPushCounter]);      // tells GUI verification knee angle
+      if (saved[verifyPushCounter][0] != -1) {
+        BTserial.print(saved[verifyPushCounter][0]);      // tells GUI verification knee angle
+        BTserial.print(",");                              // deliminator
+        BTserial.print(saved[verifyPushCounter][1]);      // tells GUI verification theta angle
+        BTserial.print(",");    
+        BTserial.print(saved[verifyPushCounter][2]);      // tells GUI verification phi angle
+        BTserial.print(",");    
+        BTserial.print(saved[verifyPushCounter][3]);      // tells GUI verification psi angle  
         BTserial.println();
         startLight(yellow, 1, 5 + verifyPushCounter, 6 + verifyPushCounter);
 
-        if ((abs(kneeAngle - saved[verifyPushCounter]) <= 10) && (abs(kneeAngle - saved[verifyPushCounter]) > 3)) {
+        if ((abs(kneeAngle - saved[verifyPushCounter][0]) <= 10) && (abs(kneeAngle - saved[verifyPushCounter][0]) > 3)) {
           startLight(yellow, 1, 0, 4);
           startLight(yellow, 1, 12, 16);
-          BTserial.print("ky");      // tells GUI we're knee yellow (ascii 121)
-          BTserial.println();
         }
-        else if ((abs(kneeAngle - saved[verifyPushCounter]) <= 3)) {
+        else if ((abs(kneeAngle - saved[verifyPushCounter][0]) <= 3)) {
           startLight(green, 1, 0, 4);
           startLight(green, 1, 12, 16);
-          BTserial.print("kg");      // tells GUI we're knee green (ascii 103)
-          BTserial.println();
         }
         else {
           startLight(red, 1, 0, 4);
           startLight(red, 1, 12, 16);
-          BTserial.print("kr");      // tells GUI we're knee red (ascii 114)
-          BTserial.println();
         }
       }
     }
