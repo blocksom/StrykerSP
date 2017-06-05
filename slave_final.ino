@@ -100,6 +100,7 @@ int lastButtonState = 0;     // previous state of the button
 
 // Verification vars
 unsigned int verifyFlag;
+int verifyIndex = 0;
 int verifyPushCounter = 0;
 int verifyState = 0;
 int lastVerifyState = 0;
@@ -227,7 +228,7 @@ void loop()
   else if (buttonPushCounter == 3) {          //BEGIN CALIBRATION STEP 3
     bno.getCalibration(&system, &gyro, &accel, &mag);
 
-    if (accel > 2) {
+    if (accel > 0) {
       startLight(green, 1, 4, 6);
       buttonPushCounter = 4;
     }
@@ -280,9 +281,9 @@ void loop()
     rawIMU[1] = euler.y(); //pitch
     rawIMU[2] = euler.z(); //roll
 
-    abductionAngle = rawIMU[0] - imuOffset[0];
-    flexionAngle = -(rawIMU[1] - imuOffset[1]);
-    externalRotationAngle = rawIMU[2] - imuOffset[2];                                   //END CALCULATION OF ANGLES
+    abductionAngle = (rawIMU[0] - imuOffset[0]);
+    flexionAngle = (rawIMU[1] - imuOffset[1]);
+    externalRotationAngle = (rawIMU[2] - imuOffset[2]);                                   //END CALCULATION OF ANGLES
 
     //POSITION SAVING BUTTON PRESS FUNCTIONALITY
     if (digitalRead(buttonPin) == HIGH) {
@@ -298,23 +299,23 @@ void loop()
           }
 
           if (savedCount <= 5 && !flag) {
-            saved[verifyPushCounter][0] = kneeAngle;
-            saved[verifyPushCounter][1] = theta;
-            saved[verifyPushCounter][2] = phi;
-            saved[verifyPushCounter][3] = psi;            
+            saved[savedCount][0] = externalRotationAngle;
+            saved[savedCount][1] = abductionAngle;
+            saved[savedCount][2] = kneeAngle;
+            saved[savedCount][3] = flexionAngle;            
 
             savedCount++;
             if (loopCount != 6)
               loopCount = savedCount;
           } else {
             if (savedCount == 6)
-              savedCount = 0;
+              //savedCount = 0;
 
             flag = 1;
-            saved[savedCount][0] = kneeAngle;
-            saved[savedCount][1] = theta;
-            saved[savedCount][2] = phi;
-            saved[savedCount][3] = psi;
+            saved[verifyPushCounter][0] = externalRotationAngle;
+            saved[verifyPushCounter][1] = abductionAngle;
+            saved[verifyPushCounter][2] = kneeAngle;
+            saved[verifyPushCounter][3] = flexionAngle;   
           }
 
           startLight(off, 1, 0, 16);
@@ -324,8 +325,6 @@ void loop()
           startLight(off, 1, 0, 16);
           delay(100);
           startLight(white, 1, 0, 16);
-          BTserial.print("store me: ");
-          BTserial.println(kneeAngle);
           holdcount = 0;
           return;
         }
@@ -353,6 +352,7 @@ void loop()
         delay(1);
         if (verifyCount == 1500) {
           verifyPushCounter--;
+          //verifyPushCounter = 0;
 
           if (verifyFlag)
             verifyFlag = 0;
@@ -365,6 +365,7 @@ void loop()
           delay(400);
           startLight(off, 1, 0, 16);
           delay(100);
+          startLight(white, 1, 0, 16);
           holdcount = 0;
           return;
         }
@@ -373,30 +374,36 @@ void loop()
 
     if (verifyFlag) {
       BTserial.print("v");      // tells GUI we're in verification mode (ascii 118)
+      delay(100);
       startLight(off, 1, 4, 5);
       startLight(off, 1, 11, 12);
       startLight(dark_blue, 1, 5, 5 + loopCount);
 
       if (verifyPushCounter == -1)
         verifyPushCounter = 0;
-      if (saved[verifyPushCounter][0] != -1) {
-        BTserial.print(saved[verifyPushCounter][0]);      // tells GUI verification knee angle
+      if (saved[verifyPushCounter][2] != -1) {
+        BTserial.print(saved[verifyPushCounter][0]);      // tells GUI verification externalRotationAngle angle
         BTserial.print(",");                              // deliminator
-        BTserial.print(saved[verifyPushCounter][1]);      // tells GUI verification theta angle
+        BTserial.print(saved[verifyPushCounter][1]);      // tells GUI verification abductionAngle angle
         BTserial.print(",");    
-        BTserial.print(saved[verifyPushCounter][2]);      // tells GUI verification phi angle
+        BTserial.print(saved[verifyPushCounter][2]);      // tells GUI verification kneeAngle angle
         BTserial.print(",");    
-        BTserial.print(saved[verifyPushCounter][3]);      // tells GUI verification psi angle  
-        BTserial.println();
+        BTserial.println(saved[verifyPushCounter][3]);      // tells GUI verification flexionAngle angle  
         startLight(yellow, 1, 5 + verifyPushCounter, 6 + verifyPushCounter);
 
-        if ((abs(kneeAngle - saved[verifyPushCounter][0]) <= 10) && (abs(kneeAngle - saved[verifyPushCounter][0]) > 3)) {
-          startLight(yellow, 1, 0, 4);
-          startLight(yellow, 1, 12, 16);
+        if (((abs(externalRotationAngle - saved[verifyPushCounter][0]) <= 10) && (abs(externalRotationAngle - saved[verifyPushCounter][0]) > 3)) ||
+         ((abs(abductionAngle - saved[verifyPushCounter][1]) <= 10) && (abs(abductionAngle - saved[verifyPushCounter][1]) > 3)) ||
+         ((abs(kneeAngle - saved[verifyPushCounter][2]) <= 10) && (abs(kneeAngle - saved[verifyPushCounter][2]) > 3)) ||
+         ((abs(flexionAngle - saved[verifyPushCounter][3]) <= 10) && (abs(flexionAngle - saved[verifyPushCounter][3]) > 3))) {
+           startLight(yellow, 1, 0, 4);
+           startLight(yellow, 1, 12, 16);
         }
-        else if ((abs(kneeAngle - saved[verifyPushCounter][0]) <= 3)) {
-          startLight(green, 1, 0, 4);
-          startLight(green, 1, 12, 16);
+        else if (((abs(externalRotationAngle - saved[verifyPushCounter][0]) <= 3)) &&
+         ((abs(abductionAngle - saved[verifyPushCounter][1]) <= 3)) &&
+         ((abs(kneeAngle - saved[verifyPushCounter][2]) <= 3)) &&
+         ((abs(flexionAngle - saved[verifyPushCounter][3]) <= 3))) {
+           startLight(green, 1, 0, 4);
+           startLight(green, 1, 12, 16);
         }
         else {
           startLight(red, 1, 0, 4);
@@ -404,10 +411,16 @@ void loop()
         }
       }
     }
-
-
+    BTserial.print((int)externalRotationAngle);      // tells GUI verification externalRotationAngle angle
+    BTserial.print(",");                        // deliminator
+    BTserial.print((int)abductionAngle);             // tells GUI verification abductionAngle angle
+    BTserial.print(",");    
+    BTserial.print((int)kneeAngle);                  // tells GUI verification kneeAngle angle
+    BTserial.print(",");    
+    BTserial.println((int)flexionAngle);               // tells GUI verification flexionAngle angle  
   }
 }
+
 
 
 
