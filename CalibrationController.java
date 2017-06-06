@@ -14,6 +14,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Stage;
 
 /**
  * FXML Controller class
@@ -31,6 +32,9 @@ public class CalibrationController implements Initializable {
     @FXML
     ImageView imageView;
     
+    @FXML 
+    Button nextStepBtn;
+    
 //    @FXML
 //    Image image = new Image("..\\..\\..\\newpackage\\step1.png");
     
@@ -38,34 +42,44 @@ public class CalibrationController implements Initializable {
     private void goToNextStep(ActionEvent event) {
         if (nextStep == 0) {
             stepLabel.setText("Step 2");
-            directions.setText("With brace removed from patient, close brace to"
-            + " most closed position.");
+            directions.setText("Fully open and close brace and press button to continue.");
             directions.setWrapText(true);
             directions.setTextAlignment(TextAlignment.JUSTIFY);
         }
         else if (nextStep == 1) {
             stepLabel.setText("Step 3");
-            directions.setText("Place brace on patient");
+            directions.setText("Lay brace on flat surface until green light advances.");
             directions.setWrapText(true);
             directions.setTextAlignment(TextAlignment.JUSTIFY);
         }
         else if (nextStep == 2) {
             stepLabel.setText("Step 4");
-            directions.setText("With brace properly attached to patient, place "
-                + "patient such that the hip extension angle is zero degrees");
             directions.setWrapText(true);
+            directions.setText("Complete one full rotation of knee brace about "
+                + "long axis, pause every 45 degrees for three seconds. Hold still " +
+                  "or lay flat once complete until green light advances");
+            
             directions.setTextAlignment(TextAlignment.JUSTIFY);
         }
         else if (nextStep == 3) {
             stepLabel.setText("Step 5");
-            directions.setText("With brace properly attached to patient, place "
-                + "patient such that the abduction angle is zero degrees.");
+            directions.setText("Place brance on patient, wave leg in figure 8 until "
+                + "green light advances.");
             directions.setWrapText(true);
             directions.setTextAlignment(TextAlignment.JUSTIFY);
         }
         else if (nextStep == 4) {
-            stepLabel.setText("Calibration Completed!");
-            directions.setText("");
+            stepLabel.setText("Step 6");
+            directions.setText("Place patient in reference configuration and " +
+               "press button to finish calibration.");
+        }
+        else if (nextStep == 5) {
+           stepLabel.setText("Calibration completed!");
+           directions.setText("");
+        }
+        else if (nextStep == 6) {
+            Stage stage = (Stage) nextStepBtn.getScene().getWindow();
+            stage.close();
         }
         nextStep++;
     }
@@ -77,8 +91,7 @@ public class CalibrationController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         // TODO
         stepLabel.setText("Step 1");
-            directions.setText("With brace removed from patient, open brace to"
-            + " most extended position.");
+            directions.setText("Press to begin calibration.");
             directions.setWrapText(true);
             directions.setTextAlignment(TextAlignment.JUSTIFY);
             

@@ -10,7 +10,7 @@
 
 <AnchorPane id="AnchorPane" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="hip.positioning.system.CalibrationController">
    <children>
-      <Button layoutX="468.0" layoutY="355.0" mnemonicParsing="false" onAction="#goToNextStep" text="Next Step" />
+      <Button fx:id="nextStepBtn" layoutX="468.0" layoutY="355.0" mnemonicParsing="false" onAction="#goToNextStep" text="Next Step" />
       <Label fx:id="stepLabel" layoutX="68.0" layoutY="39.0" prefHeight="35.0" prefWidth="425.0">
          <font>
             <Font size="24.0" />
