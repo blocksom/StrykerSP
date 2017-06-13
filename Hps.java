@@ -77,8 +77,8 @@ public class Hps extends Application {
    private int verificationMode = 0;
    private int savedCount = 0;
 
-   SerialPort arduinoPort = null;
-   ObservableList<String> portList;
+   SerialPort arduinoPort = null; // 
+   ObservableList<String> portList; // list of all open COM ports
 
    StringBuilder angle1 = new StringBuilder();
    StringBuilder angle2 = new StringBuilder();
@@ -94,13 +94,8 @@ public class Hps extends Application {
    Rotate ryBox = new Rotate(0, -100, 50, 0, Rotate.Y_AXIS);
    Rotate rzBox = new Rotate(0, -100, 50, 0, Rotate.Z_AXIS);
 
-   Rotate rxBox2 = new Rotate(0, 0, 0, 0, Rotate.X_AXIS);
    Rotate ryBox2 = new Rotate(0, 0, 0, 0, Rotate.Y_AXIS);
    Rotate rzBox2 = new Rotate(0, -100, 0, 0, Rotate.Z_AXIS);
-
-   Rotate circleX = new Rotate(0, 0, 0, 0, Rotate.X_AXIS);
-   Rotate circleY = new Rotate(0, 0, 0, 0, Rotate.Y_AXIS);
-   Rotate circleZ = new Rotate(0, 0, 0, 0, Rotate.Z_AXIS);
 
    Rotate cameraX = new Rotate(0, 0, 0, 0, Rotate.X_AXIS);
    Rotate cameraY = new Rotate(0, 0, 0, 0, Rotate.Y_AXIS);
@@ -109,9 +104,6 @@ public class Hps extends Application {
    Translate translateKnee = new Translate();
    Translate translateHip = new Translate();
 
-   Translate sphereA = new Translate();
-   Translate sphereB = new Translate();
-
    Box thigh = new Box(200, 100, 100);
    Box shank = new Box(200, 100, 100);
    Box table = new Box(1100, 50, 400);
@@ -119,22 +111,28 @@ public class Hps extends Application {
    Box staticLeg = new Box(400, 100, 100);
    Sphere head = new Sphere(60);
 
+   Group thighContainer = new Group(thigh);
+   Group shankContainer = new Group(shank);
+   Group tableContainer = new Group(table);
+   Group staticLegContainer = new Group(staticLeg);
+   Group torsoContainer = new Group(torso);
+   Group headContainer = new Group(head);
+
    int count = 0;
    Boolean receivingMessage = false;
-   String st;
 
-   final PhongMaterial redMaterial = new PhongMaterial();
+   final PhongMaterial tanMaterial = new PhongMaterial();
    final PhongMaterial tableMaterial = new PhongMaterial();
 
-   Label intExtLabel = new Label("Internal/External Angle: ");
-   Label hipAbAdLabel = new Label("Hip Adduction/Abduction Angle: ");
-   Label kneeFlexExtenLabel = new Label("Knee Flexion/Extension Angle: ");
-   Label hipFlexExtenLabel = new Label("Hip Flex/Extension Angle: ");
+   Label intExtLabel = new Label("Hip External Rotation Angle: ");
+   Label hipAbAdLabel = new Label("Hip Abduction Angle: ");
+   Label kneeFlexExtenLabel = new Label("Knee Flexion Angle: ");
+   Label hipFlexExtenLabel = new Label("Hip Flexion Angle: ");
 
-   Label savedIntExtLabel = new Label("Saved Internal/External Angle: ");
-   Label savedHipAbAdLabel = new Label("Saved Hip Adduction/Abduction Angle: ");
-   Label savedKneeFlexExtenLabel = new Label("Saved Knee Flexion/Extension Angle: ");
-   Label savedHipFlexExtenLabel = new Label("Saved Hip Flex/Extension Angle: ");
+   Label savedIntExtLabel = new Label("Saved Hip External Rotation Angle: ");
+   Label savedHipAbAdLabel = new Label("Saved Hip Abduction Angle: ");
+   Label savedKneeFlexExtenLabel = new Label("Saved Knee Flexion Angle: ");
+   Label savedHipFlexExtenLabel = new Label("Saved Hip Flexion Angle: ");
 
    VBox ports = new VBox();
 
@@ -142,38 +140,6 @@ public class Hps extends Application {
    public void start(Stage primaryStage) {
       imv.setLayoutX(1400);
       imv.setLayoutY(500);
-
-      intExtLabel.setLayoutX(1400);
-      intExtLabel.setLayoutY(160);
-      intExtLabel.setFont(Font.font("Arial", 24));
-
-      hipAbAdLabel.setLayoutX(1400);
-      hipAbAdLabel.setLayoutY(200);
-      hipAbAdLabel.setFont(Font.font("Arial", 24));
-
-      kneeFlexExtenLabel.setLayoutX(1400);
-      kneeFlexExtenLabel.setLayoutY(240);
-      kneeFlexExtenLabel.setFont(Font.font("Arial", 24));
-
-      hipFlexExtenLabel.setLayoutX(1400);
-      hipFlexExtenLabel.setLayoutY(280);
-      hipFlexExtenLabel.setFont(Font.font("Arial", 24));
-
-      savedIntExtLabel.setLayoutX(1400);
-      savedIntExtLabel.setLayoutY(350);
-      savedIntExtLabel.setFont(Font.font("Arial", 24));
-
-      savedHipAbAdLabel.setLayoutX(1400);
-      savedHipAbAdLabel.setLayoutY(390);
-      savedHipAbAdLabel.setFont(Font.font("Arial", 24));
-
-      savedKneeFlexExtenLabel.setLayoutX(1400);
-      savedKneeFlexExtenLabel.setLayoutY(430);
-      savedKneeFlexExtenLabel.setFont(Font.font("Arial", 24));
-
-      savedHipFlexExtenLabel.setLayoutX(1400);
-      savedHipFlexExtenLabel.setLayoutY(470);
-      savedHipFlexExtenLabel.setFont(Font.font("Arial", 24));
 
       PerspectiveCamera cameraAerialView = new PerspectiveCamera();
       Button aerialViewBtn = new Button();
@@ -227,42 +193,20 @@ public class Hps extends Application {
       translateHip.xProperty().bind(xCoordHip);
       translateHip.zProperty().bind(zCoordHip);
 
-      Group thighContainer = new Group(thigh);
-      Group shankContainer = new Group(shank);
-      Group tableContainer = new Group(table);
-      Group staticLegContainer = new Group(staticLeg);
-      Group torsoContainer = new Group(torso);
-      Group headContainer = new Group(head);
-
-      thighContainer.setTranslateX(1100);
-      shankContainer.setTranslateX(1300);
-      thighContainer.setTranslateY(500);
-      shankContainer.setTranslateY(500);
-      thighContainer.setTranslateZ(150);
-      shankContainer.setTranslateZ(150);
-      tableContainer.setTranslateX(900);
-      tableContainer.setTranslateY(575);
-      tableContainer.setTranslateZ(100);
-      staticLegContainer.setTranslateX(1200);
-      staticLegContainer.setTranslateY(500);
-      torsoContainer.setTranslateX(760);
-      torsoContainer.setTranslateY(500);
-      torsoContainer.setTranslateZ(75);
-      headContainer.setTranslateX(450);
-      headContainer.setTranslateY(500);
-      headContainer.setTranslateZ(60);
+      moveContainers();
+      moveLabels();
 
       thigh.getTransforms().addAll(rzBox, ryBox, rxBox);
       shank.getTransforms().addAll(rzBox, rzBox2, translateKnee, ryBox, translateHip, rxBox);
 
-      redMaterial.setDiffuseColor(Color.TAN);
+      tanMaterial.setDiffuseColor(Color.TAN);
       tableMaterial.setDiffuseColor(Color.DARKGRAY);
-      thigh.setMaterial(redMaterial);
-      shank.setMaterial(redMaterial);
+      thigh.setMaterial(tanMaterial);
+      shank.setMaterial(tanMaterial);
       table.setMaterial(tableMaterial);
-      staticLeg.setMaterial(redMaterial);
-      torso.setMaterial(redMaterial);
-      head.setMaterial(redMaterial);
+      staticLeg.setMaterial(tanMaterial);
+      torso.setMaterial(tanMaterial);
+      head.setMaterial(tanMaterial);
 
       detectPort();
 
@@ -275,7 +219,7 @@ public class Hps extends Application {
               sideViewBtn, intExtLabel, hipAbAdLabel, kneeFlexExtenLabel, hipFlexExtenLabel,
               savedIntExtLabel, savedHipAbAdLabel, savedKneeFlexExtenLabel, savedHipFlexExtenLabel,
               snapshotBtn, imv);
-      subroot.getChildren().addAll(staticLegContainer, thighContainer, 
+      subroot.getChildren().addAll(staticLegContainer, thighContainer,
               shankContainer, tableContainer, torsoContainer, headContainer);
       root.getChildren().add(subScene);
 
@@ -289,12 +233,13 @@ public class Hps extends Application {
 
                     System.out.println(newValue);
                     disconnectArduino();
-                    connectArduino(newValue, subScene);
+                    connectArduino(newValue);
                  }
 
               });
       ports.getChildren().addAll(comboBoxPorts);
 
+      // initialize the viewing angle to aerial view
       cameraAerialView.getTransforms().removeAll(cameraX, cameraY, cameraZ);
       cameraAerialView.setTranslateY(-200);
       cameraX.setAngle(-80);
@@ -308,6 +253,7 @@ public class Hps extends Application {
 
       primaryStage.show();
 
+      // eventlistener for the calibration popup functionality
       calibrateBtn.setOnAction(new EventHandler<ActionEvent>() {
          @Override
          public void handle(ActionEvent event) {
@@ -319,12 +265,14 @@ public class Hps extends Application {
                stage.setTitle("Calibrating...");
                stage.setScene(new Scene(root1));
                stage.show();
-            } catch (IOException e) {
+            } 
+            catch (IOException e) {
                e.printStackTrace();
             }
          }
       });
 
+      // eventlistener for the aerial camera 
       aerialViewBtn.setOnAction(new EventHandler<ActionEvent>() {
          @Override
          public void handle(ActionEvent event) {
@@ -337,6 +285,7 @@ public class Hps extends Application {
          }
       });
 
+      // eventlistener for front camera view
       footViewBtn.setOnAction(new EventHandler<ActionEvent>() {
          @Override
          public void handle(ActionEvent event) {
@@ -352,6 +301,7 @@ public class Hps extends Application {
          }
       });
 
+      // eventlistener for side view
       sideViewBtn.setOnAction(new EventHandler<ActionEvent>() {
          @Override
          public void handle(ActionEvent event) {
@@ -368,6 +318,7 @@ public class Hps extends Application {
          }
       });
 
+      // eventlistener to change camera angle 
       isoViewBtn.setOnAction(new EventHandler<ActionEvent>() {
          @Override
          public void handle(ActionEvent event) {
@@ -383,6 +334,7 @@ public class Hps extends Application {
          }
       });
 
+      // eventlistener for snapshot functionality
       snapshotBtn.setOnAction(new EventHandler<ActionEvent>() {
          @Override
          public void handle(ActionEvent event) {
@@ -395,8 +347,9 @@ public class Hps extends Application {
                ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", file);
                Image img = new Image("file:savedPosition.png", 600, 480, true, true);
                imv.setImage(img);
-            } catch (IOException e) {
-               // TODO: handle exception here
+            } 
+            catch (IOException e) {
+               e.printStackTrace();
             }
          }
       });
@@ -414,7 +367,13 @@ public class Hps extends Application {
       }
    }
 
-   public boolean connectArduino(String port, SubScene sub) {
+   /* 
+      Reads in every byte sent in the serial port. If a \n is found, then 
+      package that string and convert it to the int to make to angle. If a comma 
+      is found, up the count and append the to the next angle. Endless stream 
+      until the application is shut down. 
+   */
+   public boolean connectArduino(String port) {
 
       System.out.println("connectArduino");
 
@@ -431,24 +390,18 @@ public class Hps extends Application {
          serialPort.addEventListener((SerialPortEvent serialPortEvent) -> {
             if (serialPortEvent.isRXCHAR() && serialPortEvent.getEventValue() > 0) {
                try {
-                  /* 
-                            Reads in every byte sent in the serial port. 
-                            If a \n is found, then package that string and 
-                            convert it to the int to make to angle. If a comma 
-                            is found, up the count and append the to the next 
-                            angle. Endless stream until the application is shut 
-                            down. 
-                   */
                   byte buffer[] = serialPort.readBytes(serialPortEvent.getEventValue());
                   for (byte b : buffer) {
                      if (b == 118) {
                         verificationMode = 1;
                         comparisonFlag = 1;
-                     } else {
+                     } 
+                     else {
                         if (verificationMode == 1) {
                            if (b == 44) {
                               savedCount++;
-                           } else if (b == 10) {
+                           } 
+                           else if (b == 10) {
                               savedCount = 0;
                               verificationMode = 0;
 
@@ -456,19 +409,16 @@ public class Hps extends Application {
                               String angle2Process = savedAngle2.toString();
                               String angle3Process = savedAngle3.toString();
                               String angle4Process = savedAngle4.toString();
-
-                              //toProcess.split(" ");
+                              
                               String temp1 = new String();
                               temp1 = angle1Process.trim();
 
                               String temp2 = new String();
                               temp2 = angle2Process.trim();
-
-                              // to be used
+                              
                               String temp3 = new String();
                               temp3 = angle3Process.trim();
-
-                              // to be used
+                              
                               String temp4 = new String();
                               temp4 = angle4Process.trim();
 
@@ -486,47 +436,51 @@ public class Hps extends Application {
                                  // first angle calculations
                                  savedAngles[0] = Double.parseDouble(temp1);
                                  Platform.runLater(() -> {
-                                    savedIntExtLabel.setText("Saved Interior/Ext Angle: " + -savedAngles[0]);
+                                    savedIntExtLabel.setText("Saved Hip External Rotation Angle: " + -savedAngles[0]);
                                  });
 
                                  // second angle calculations
                                  savedAngles[1] = Double.parseDouble(temp2);
                                  Platform.runLater(() -> {
-                                    savedHipAbAdLabel.setText("Saved Hip Adduction/Abduction Angle: " + -savedAngles[1]);
+                                    savedHipAbAdLabel.setText("Saved Hip Abduction Angle: " + -savedAngles[1]);
                                  });
 
                                  // third angle calculations
                                  savedAngles[2] = Double.parseDouble(temp3);
                                  Platform.runLater(() -> {
-                                    savedKneeFlexExtenLabel.setText("Saved Knee Flexion/Extension Angle: " + savedAngles[2]);
+                                    savedKneeFlexExtenLabel.setText("Saved Knee Flexion Angle: " + savedAngles[2]);
                                  });
 
                                  // last angle calculations
                                  savedAngles[3] = Double.parseDouble(temp4);
                                  Platform.runLater(() -> {
-                                    savedHipFlexExtenLabel.setText("Saved Hip Flexion/Extension Angle: " + -savedAngles[3]);
+                                    savedHipFlexExtenLabel.setText("Saved Hip Flexion Angle: " + -savedAngles[3]);
                                  });
 
                               } catch (NumberFormatException e) {
                                  e.printStackTrace();
                               }
-
-                              // comparisons
-                           } else {
+                           } 
+                           else {
                               if (savedCount == 0) {
                                  savedAngle1.append((char) b);
-                              } else if (savedCount == 1) {
+                              } 
+                              else if (savedCount == 1) {
                                  savedAngle2.append((char) b);
-                              } else if (savedCount == 2) {
+                              } 
+                              else if (savedCount == 2) {
                                  savedAngle3.append((char) b);
-                              } else if (savedCount == 3) {
+                              } 
+                              else if (savedCount == 3) {
                                  savedAngle4.append((char) b);
                               }
                            }
-                        } else if (verificationMode == 0) {
+                        } 
+                        else if (verificationMode == 0) {
                            if (b == 44) {
                               count++;
-                           } else if (b == 10) {
+                           } 
+                           else if (b == 10) {
 
                               count = 0;
                               String angle1Process = angle1.toString();
@@ -560,17 +514,17 @@ public class Hps extends Application {
                                  angle3.setLength(0);
                                  angle4.setLength(0);
 
-                                 // first angle calculations
+                                 // external angle calculations
                                  Integer x = Integer.parseInt(temp1);
                                  Platform.runLater(() -> {
-                                    intExtLabel.setText("Interior/Ext Angle: " + -x);
+                                    intExtLabel.setText("Hip External Rotation Angle: " + -x);
                                  });
                                  intRotAngle.set(x);
 
-                                 // second angle calculations
+                                 // hip abduction angle calculations
                                  Integer y = Integer.parseInt(temp2);
                                  Platform.runLater(() -> {
-                                    hipAbAdLabel.setText("Hip Adduction.Abduction Angle: " + -y);
+                                    hipAbAdLabel.setText("Hip Abduction Angle: " + -y);
                                  });
                                  hipAddAbAngle.set(y);
                                  Platform.runLater(() -> {
@@ -583,20 +537,20 @@ public class Hps extends Application {
                                     shank.getTransforms().addAll(ryBox2, rzBox2);
                                  });
 
-                                 // third angle calculations
+                                 // knee flexion angle calculations
                                  Integer z = Integer.parseInt(temp3);
 
                                  if (z >= 0) {
                                     kneeAngle.set(z);
                                     Platform.runLater(() -> {
-                                       kneeFlexExtenLabel.setText("Knee Flexion/Extension Angle: " + z);
+                                       kneeFlexExtenLabel.setText("Knee Flexion Angle: " + z);
                                     });
                                  }
 
                                  // last angle calculations
                                  Integer a = Integer.parseInt(temp4);
                                  Platform.runLater(() -> {
-                                    hipFlexExtenLabel.setText("Hip Flexion/Extension Angle: " + -a);
+                                    hipFlexExtenLabel.setText("Hip Flexion Angle: " + -a);
                                  });
                                  Platform.runLater(() -> {
                                     shank.getTransforms().removeAll(rzBox2, ryBox2);
@@ -659,45 +613,47 @@ public class Hps extends Application {
                                        savedHipFlexExtenLabel.setTextFill(Color.web("#b2ad1c"));
                                     }
                                  }
-
-                              } catch (NumberFormatException e) {
+                              } 
+                              catch (NumberFormatException e) {
                                  e.printStackTrace();
                               }
 
-                           } else {
+                           } 
+                           else {
                               if (count == 0) {
                                  angle1.append((char) b);
-                                 //System.out.println(angle1);
-                              } else if (count == 1) {
+                              } 
+                              else if (count == 1) {
                                  angle2.append((char) b);
-                              } else if (count == 2) {
+                              } 
+                              else if (count == 2) {
                                  angle3.append((char) b);
-                              } else if (count == 3) {
+                              } 
+                              else if (count == 3) {
                                  angle4.append((char) b);
                               }
                            }
                         }
                      }
                   }
-
-                  //Update label in ui thread
-               } catch (SerialPortException ex) {
+               } 
+               catch (SerialPortException ex) {
                   Logger.getLogger(Hps.class.getName())
-                          .log(Level.SEVERE, null, ex);
-               } catch (NumberFormatException e) {
-
+                   .log(Level.SEVERE, null, ex);
+               } 
+               catch (NumberFormatException e) {
+                  e.printStackTrace();
                }
             }
          });
 
          arduinoPort = serialPort;
          success = true;
-      } catch (SerialPortException ex) {
-         Logger.getLogger(Hps.class.getName())
-                 .log(Level.SEVERE, null, ex);
+      } 
+      catch (SerialPortException ex) {
+         Logger.getLogger(Hps.class.getName()).log(Level.SEVERE, null, ex);
          System.out.println("SerialPortException: " + ex.toString());
       }
-
       return success;
    }
 
@@ -726,7 +682,8 @@ public class Hps extends Application {
                arduinoPort.closePort();
             }
 
-         } catch (SerialPortException ex) {
+         } 
+         catch (SerialPortException ex) {
             Logger.getLogger(Hps.class.getName())
                     .log(Level.SEVERE, null, ex);
          }
@@ -735,7 +692,60 @@ public class Hps extends Application {
 
    public void stop() throws Exception {
       disconnectArduino();
-      //stop();
+   }
+   
+   public void moveLabels() {
+      intExtLabel.setLayoutX(1400);
+      intExtLabel.setLayoutY(160);
+      intExtLabel.setFont(Font.font("Arial", 24));
+
+      hipAbAdLabel.setLayoutX(1400);
+      hipAbAdLabel.setLayoutY(200);
+      hipAbAdLabel.setFont(Font.font("Arial", 24));
+
+      hipFlexExtenLabel.setLayoutX(1400);
+      hipFlexExtenLabel.setLayoutY(240);
+      hipFlexExtenLabel.setFont(Font.font("Arial", 24));
+
+      kneeFlexExtenLabel.setLayoutX(1400);
+      kneeFlexExtenLabel.setLayoutY(280);
+      kneeFlexExtenLabel.setFont(Font.font("Arial", 24));
+
+      savedIntExtLabel.setLayoutX(1400);
+      savedIntExtLabel.setLayoutY(350);
+      savedIntExtLabel.setFont(Font.font("Arial", 24));
+
+      savedHipAbAdLabel.setLayoutX(1400);
+      savedHipAbAdLabel.setLayoutY(390);
+      savedHipAbAdLabel.setFont(Font.font("Arial", 24));
+
+      savedHipFlexExtenLabel.setLayoutX(1400);
+      savedHipFlexExtenLabel.setLayoutY(430);
+      savedHipFlexExtenLabel.setFont(Font.font("Arial", 24));
+
+      savedKneeFlexExtenLabel.setLayoutX(1400);
+      savedKneeFlexExtenLabel.setLayoutY(470);
+      savedKneeFlexExtenLabel.setFont(Font.font("Arial", 24));
+   }
+
+   public void moveContainers() {
+      thighContainer.setTranslateX(1100);
+      shankContainer.setTranslateX(1300);
+      thighContainer.setTranslateY(500);
+      shankContainer.setTranslateY(500);
+      thighContainer.setTranslateZ(150);
+      shankContainer.setTranslateZ(150);
+      tableContainer.setTranslateX(900);
+      tableContainer.setTranslateY(575);
+      tableContainer.setTranslateZ(100);
+      staticLegContainer.setTranslateX(1200);
+      staticLegContainer.setTranslateY(500);
+      torsoContainer.setTranslateX(760);
+      torsoContainer.setTranslateY(500);
+      torsoContainer.setTranslateZ(75);
+      headContainer.setTranslateX(450);
+      headContainer.setTranslateY(500);
+      headContainer.setTranslateZ(60);
    }
 
    /**
